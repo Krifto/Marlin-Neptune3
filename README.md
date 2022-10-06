@@ -1,89 +1,118 @@
-# Marlin 3D Printer Firmware
+# Neptune 3
+- More product updates and tutorial materials are in the works.
 
-![GitHub](https://img.shields.io/github/license/marlinfirmware/marlin.svg)
-![GitHub contributors](https://img.shields.io/github/contributors/marlinfirmware/marlin.svg)
-![GitHub Release Date](https://img.shields.io/github/release-date/marlinfirmware/marlin.svg)
-[![Build Status](https://github.com/MarlinFirmware/Marlin/workflows/CI/badge.svg?branch=bugfix-2.0.x)](https://github.com/MarlinFirmware/Marlin/actions)
 
-<img align="right" width=175 src="buildroot/share/pixmaps/logo/marlin-250.png" />
 
-Additional documentation can be found at the [Marlin Home Page](https://marlinfw.org/).
-Please test this firmware and let us know if it misbehaves in any way. Volunteers are standing by!
+## 说明/Brief description
+- 固件的升级方法请参见: Neptune3-Firmware Update Notes.docx
+- 在【设置】→【关于机器】中查看当前屏幕版本。如果UI版本没有显示，则需要更新屏幕固件和主板固件。如果UI版本显示为V1，则只需要更新主板固件。
+- For details about how to upgrade the Firmware, see: Neptune3-Firmware Update Notes.docx
+- Check the current screen version in 【Settings】 → 【About Machine】. If the UI version is not displayed, you need to update the screen firmware as well as the motherboard firmware. If the UI version (V1) is displayed, only the motherboard firmware needs to be updated.
 
-## Marlin 2.0
 
-Marlin 2.0 takes this popular RepRap firmware to the next level by adding support for much faster 32-bit and ARM-based boards while improving support for 8-bit AVR boards. Read about Marlin's decision to use a "Hardware Abstraction Layer" below.
+## 屏幕固件与主板固件兼容关系
+## Compatibility between screen firmware and mainboard firmware
+|   屏幕固件版本   |     主板固件版本    | 
+|-------------------|--------------------|
+| Screen Firmware Version | Mainboard Firmware Version |
+| V0 | 停止下载/stop  download |
+| V1 |V1.0.2 / V1_1.0.3 / V1_1.0.4  |
 
-Download earlier versions of Marlin on the [Releases page](https://github.com/MarlinFirmware/Marlin/releases).
 
-## Example Configurations
+[Original Marlin README](./README-marlin.md)
 
-Before building Marlin you'll need to configure it for your specific hardware. Your vendor should have already provided source code with configurations for the installed firmware, but if you ever decide to upgrade you'll need updated configuration files. Marlin users have contributed dozens of tested example configurations to get you started. Visit the [MarlinFirmware/Configurations](https://github.com/MarlinFirmware/Configurations) repository to find the right configuration for your hardware.
 
-## Building Marlin 2.0
 
-To build Marlin 2.0 you'll need [Arduino IDE 1.8.8 or newer](https://www.arduino.cc/en/main/software) or [PlatformIO](http://docs.platformio.org/en/latest/ide.html#platformio-ide). Detailed build and install instructions are posted at:
 
-  - [Installing Marlin (Arduino)](http://marlinfw.org/docs/basics/install_arduino.html)
-  - [Installing Marlin (VSCode)](http://marlinfw.org/docs/basics/install_platformio_vscode.html).
+## 升级日志/The upgrade log
+### 屏幕固件/Screen firmware
+#### V0
+- 旧版本固件不提供下载
+- Older firmware versions are not available for download
 
-### Supported Platforms
+#### V1
+- 在【设置】→【关于】中可以查看屏幕固件版本以及主板固件版本
+- 在【设置】中增加【调平温度设置】。默认调平温度：热端140℃  /  热床：60℃
+- In 【Settings】→【About】, you can view the screen firmware version and the motherboard firmware version
+- Added 【Leveling Temperature Settings】 to 【Settings】. Default leveling temperature: Hotend 140 ° C  / Hotbed 60 ° C
 
-  Platform|MCU|Example Boards
-  --------|---|-------
-  [Arduino AVR](https://www.arduino.cc/)|ATmega|RAMPS, Melzi, RAMBo
-  [Teensy++ 2.0](http://www.microchip.com/wwwproducts/en/AT90USB1286)|AT90USB1286|Printrboard
-  [Arduino Due](https://www.arduino.cc/en/Guide/ArduinoDue)|SAM3X8E|RAMPS-FD, RADDS, RAMPS4DUE
-  [ESP32](https://github.com/espressif/arduino-esp32)|ESP32|FYSETC E4, E4d@BOX, MRR
-  [LPC1768](http://www.nxp.com/products/microcontrollers-and-processors/arm-based-processors-and-mcus/lpc-cortex-m-mcus/lpc1700-cortex-m3/512kb-flash-64kb-sram-ethernet-usb-lqfp100-package:LPC1768FBD100)|ARM® Cortex-M3|MKS SBASE, Re-ARM, Selena Compact
-  [LPC1769](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/general-purpose-mcus/lpc1700-cortex-m3/512kb-flash-64kb-sram-ethernet-usb-lqfp100-package:LPC1769FBD100)|ARM® Cortex-M3|Smoothieboard, Azteeg X5 mini, TH3D EZBoard
-  [STM32F103](https://www.st.com/en/microcontrollers-microprocessors/stm32f103.html)|ARM® Cortex-M3|Malyan M200, GTM32 Pro, MKS Robin, BTT SKR Mini
-  [STM32F401](https://www.st.com/en/microcontrollers-microprocessors/stm32f401.html)|ARM® Cortex-M4|ARMED, Rumba32, SKR Pro, Lerdge, FYSETC S6
-  [STM32F7x6](https://www.st.com/en/microcontrollers-microprocessors/stm32f7x6.html)|ARM® Cortex-M7|The Borg, RemRam V1
-  [SAMD51P20A](https://www.adafruit.com/product/4064)|ARM® Cortex-M4|Adafruit Grand Central M4
-  [Teensy 3.5](https://www.pjrc.com/store/teensy35.html)|ARM® Cortex-M4|
-  [Teensy 3.6](https://www.pjrc.com/store/teensy36.html)|ARM® Cortex-M4|
-  [Teensy 4.0](https://www.pjrc.com/store/teensy40.html)|ARM® Cortex-M7|
-  [Teensy 4.1](https://www.pjrc.com/store/teensy41.html)|ARM® Cortex-M7|
-  Linux Native|x86/ARM/etc.|Raspberry Pi
 
-## Submitting Changes
+#### V2 (Stay tuned for)
+- @@@
+- @@@
 
-- Submit **Bug Fixes** as Pull Requests to the ([bugfix-2.0.x](https://github.com/MarlinFirmware/Marlin/tree/bugfix-2.0.x)) branch.
-- Follow the [Coding Standards](http://marlinfw.org/docs/development/coding_standards.html) to gain points with the maintainers.
-- Please submit your questions and concerns to the [Issue Queue](https://github.com/MarlinFirmware/Marlin/issues).
+### 主板固件/Board firmware
+#### V1.0.2
+- 增加【调平温度设置】
+- 修复了一些已发现bug。改善了调平方式。
+- Added 【Leveling Temperature Settings】
+- Fixed some discovered bugs. Improved leveling method.
 
-## Marlin Support
+#### V1_1.0.3
+- 修复了一些已发现bug。改善了调平方式。
+- 改善了回原点速度和调平速度。
+- 打印过程中，点击【停止】→【确定】 或 打印完成后点击【确定】，会自动保存Z-offset值。为了解决打印过程中调整的Z-offset不会保存问题。
+- Fixed some discovered bugs. Improved leveling method.
+- Optimize return to origin speed and leveling speed.
+- To solve the problem that the Z-offset adjusted during printing will not be saved：During printing, click 【stop】→【confirm】 or click 【confirm】 after printing is completed, the Z-offset value will be saved automatically. 
 
-The Issue Queue is reserved for Bug Reports and Feature Requests. To get help with configuration and troubleshooting, please use the following resources:
 
-- [Marlin Documentation](http://marlinfw.org) - Official Marlin documentation
-- [Marlin Discord](https://discord.gg/n5NJ59y) - Discuss issues with Marlin users and developers
-- Facebook Group ["Marlin Firmware"](https://www.facebook.com/groups/1049718498464482/)
-- RepRap.org [Marlin Forum](http://forums.reprap.org/list.php?415)
-- Facebook Group ["Marlin Firmware for 3D Printers"](https://www.facebook.com/groups/3Dtechtalk/)
-- [Marlin Configuration](https://www.youtube.com/results?search_query=marlin+configuration) on YouTube
+#### V1_1.0.4（Update in the future）
+- 在固件V1_1.0.3基础上改进。
+- 再次优化G28回原点速度和G29调平速度。
+- 修改默认调平温度。热端：0℃  / 热床：60℃ 。仍然可以在【设置】中修改调平温度。
+- 默认Z-Offset=0.1 。通常情况下，调平后可以直接选择gcode文件打印，无需设置Z-Offset。
+- 修复断电续打功能bug：恢复打印时喷嘴距离模型很高。（注意：如果断电后Z轴掉落或者模型脱落也会导致断电续打失败）。
+- 优化打印操作。打印过程中，点击【暂停】后挤出机会先回抽10mm，以防止漏料。
+- 优化打印操作。暂停打印后，点击【恢复】会先挤出9mm→回抽9mm→移动到打印位置→继续正常打印，避免了换料或暂停打印后出现的缺料问题。
+- 优化打印操作。点击【停止】打印后挤出机会回抽10mm，以防止漏料。
+- Improved on firmware V1_1.0.3.
+- G28 return to the origin speed and G29 leveling speed were optimized again.
+- Change the default leveling temperature. Hot end: 0℃ / hot bed: 60℃.You can still change the 【leveling temperature】 in 【Settings】.
+- The default value is 【z-offset =0.1】. In general, you do not need to set the z-offset after leveling.
+- Fixed a bug in the power-off continuation function where the nozzle distance from the model was too high when recovering print.(Note: If the Z-axis drops or the model falls off after power-off, the power-off refill function cannot be used normally).
+- Optimize print operations. In the printing process, after clicking 【Pause】, the extrusion machine will draw back 10mm to prevent material leakage.
+- Optimize print operations. After pausing printing, click 【Resume】 to extrude 9mm→ pull back 9mm→ move to the printing position → continue normal printing. Avoid the empty print problem.
+- Optimize print operations. After clicking 【Stop】 to print, the extrusion machine will draw back 10mm to prevent material leakage.
 
-## Contributors
 
-Marlin is constantly improving thanks to a huge number of contributors from all over the world bringing their specialties and talents. Huge thanks are due to [all the contributors](https://github.com/MarlinFirmware/Marlin/graphs/contributors) who regularly patch up bugs, help direct traffic, and basically keep Marlin from falling apart. Marlin's continued existence would not be possible without them.
 
-## Administration
+## 加载屏幕固件方法
+### 1、TF卡格式要求（格式化TF卡）
+|   文件系统（F）       | 分配单元大小（A） |
+|----------------------|-------------------|
+|     FAT32(默认)      |    4096 字节      |
 
-Regular users can open and close their own issues, but only the administrators can do project-related things like add labels, merge changes, set milestones, and kick trolls. The current Marlin admin team consists of:
+### 2、方法
+- ①拆开屏幕外壳。
+- ②将文件夹“DWIN_SET”复制到TF卡根目录下，插入屏幕TF卡槽。
+- ③重启电源。
+- ④等待约1分30秒，屏幕显示第二行会出现“End!”即表示更新屏幕固件成功。
+- ⑤移除TF卡，重启电源即可。
 
- - Scott Lahteine [[@thinkyhead](https://github.com/thinkyhead)] - USA - Project Maintainer &nbsp; [![Donate](https://api.flattr.com/button/flattr-badge-large.png)](http://www.thinkyhead.com/donate-to-marlin)
- - Roxanne Neufeld [[@Roxy-3D](https://github.com/Roxy-3D)] - USA
- - Keith Bennett [[@thisiskeithb](https://github.com/thisiskeithb)] - USA
- - Victor Oliveira [[@rhapsodyv](https://github.com/rhapsodyv)] - Brazil
- - Chris Pepper [[@p3p](https://github.com/p3p)] - UK
- - Jason Smith [[@sjasonsmith](https://github.com/sjasonsmith)] - USA
- - Luu Lac [[@shitcreek](https://github.com/shitcreek)] - USA
- - Bob Kuhn [[@Bob-the-Kuhn](https://github.com/Bob-the-Kuhn)] - USA
- - Erik van der Zalm [[@ErikZalm](https://github.com/ErikZalm)] - Netherlands &nbsp; [![Flattr Erik](https://api.flattr.com/button/flattr-badge-large.png)](https://flattr.com/submit/auto?user_id=ErikZalm&url=https://github.com/MarlinFirmware/Marlin&title=Marlin&language=&tags=github&category=software)
 
-## License
+## 加载主板固件方法
+- ①将文件“ZNP_ROBIN_NANO.bin”复制到TF卡根目录下。
+- ②重启电源。
+- ③等待约20秒，屏幕显示出现LOGO即表示更新主板固件成功。
 
-Marlin is published under the [GPL license](/LICENSE) because we believe in open development. The GPL comes with both rights and obligations. Whether you use Marlin firmware as the driver for your open or closed-source product, you must keep Marlin open, and you must provide your compatible Marlin source code to end users upon request. The most straightforward way to comply with the Marlin license is to make a fork of Marlin on Github, perform your modifications, and direct users to your modified fork.
 
-While we can't prevent the use of this code in products (3D printers, CNC, etc.) that are closed source or crippled by a patent, we would prefer that you choose another firmware or, better yet, make your own.
+## Loading screen firmware method
+### 1、TF card format requirements（Format the TF card）
+|      File system     |      Allocation unit size     |
+|----------------------|-------------------------------|
+|      FAT32           |           4096 bit            |
+
+### 2、Method
+- ① Remove the screen cover.
+- ② Copy the folder 'DWIN_SET' to the TF root directory and insert it into the TF card slot on the screen.
+- ③ Restart the power supply.
+- ④ After about 90 seconds, the message "End!" is displayed in the second line. The screen firmware is successfully updated.
+- ⑤ Remove the TF card and restart the power supply.
+
+## Load motherboard firmware method
+
+- ① Copy the znp_robin_nano-bin file to the TF root directory.
+- ② Restart the power supply.
+- ③ After about 20 seconds, if the LOGO is displayed on the screen, the mainboard firmware is successfully updated.
+
