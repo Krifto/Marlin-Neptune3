@@ -16,7 +16,7 @@ on:
     - '**/*.md'
   push:
     branches:
-    - bugfix-2.0.x
+    - Neptune3-beta
     paths-ignore:
     - config/**
     - data/**
