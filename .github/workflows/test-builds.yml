@@ -35,7 +35,7 @@ jobs:
         test-platform:
         
 
-        - MKS_E3_V2
+        - mks_robin
         
 
     steps:
