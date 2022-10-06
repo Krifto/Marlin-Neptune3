@@ -43,16 +43,31 @@
   #include "../../../../feature/powerloss.h"
 #endif
 
+#include "../../../../feature/bedlevel/bedlevel.h"
+
+bool filament_change_flg=false;
+
+
 #if ENABLED(DGUS_UI_MOVE_DIS_OPTION)
   uint16_t distanceToMove = 10;
 #endif
+uint16_t manualE0_T_Step = 1;
+uint16_t manualHotB_T_Step = 1;
 
-uint16_t manualMoveStep = 1;
+
+uint16_t FeedratePercentageStep = 1;
+uint16_t FlowPercentageStep = 1;
+uint16_t FanPercentageStep = 1;
+
+uint16_t manualMoveStep = 2;
 uint16_t distanceFilament = 10;
-uint16_t filamentSpeed_mm_s = 25;
-float ZOffset_distance = 0.1;
+uint16_t filamentSpeed_mm_s = 5;
+uint16_t ZOffset_distanceStep = 1;
+uint16_t AUTO_ZOffset_distanceStep = 0;
+float ZOffset_distance = 10;//0.1;//扩大10倍
 float mesh_adj_distance = 0.01;
 float Z_distance = 0.1;
+//extern bed_mesh_t z_values;
 
 //struct { uint16_t h, m, s; } dgus_time;
 
@@ -62,6 +77,18 @@ float Z_distance = 0.1;
 xy_int_t mks_corner_offsets[5];   // Initialized by settings.load()
 xyz_int_t mks_park_pos;           // Initialized by settings.load()
 celsius_t mks_min_extrusion_temp; // Initialized by settings.load()
+
+celsius_t mks_PLA_default_e0_temp; // Initialized by settings.load()
+celsius_t mks_PLA_default_bed_temp; // Initialized by settings.load()
+
+celsius_t mks_ABS_default_e0_temp; // Initialized by settings.load()
+celsius_t mks_ABS_default_bed_temp; // Initialized by settings.load()
+
+celsius_t mks_AL_default_e0_temp; // Initialized by settings.load()
+celsius_t mks_AL_default_bed_temp; // Initialized by settings.load()
+
+uint16_t mks_language=6; // Initialized by settings.load()
+uint16_t mks_filament_det_enable = 1; // Initialized by settings.load()
 
 void MKS_reset_settings() {
   constexpr xy_int_t init_dgus_level_offsets[5] = {
@@ -73,6 +100,14 @@ void MKS_reset_settings() {
   COPY(mks_corner_offsets, init_dgus_level_offsets);
   mks_park_pos.set(20, 20, 10);
   mks_min_extrusion_temp = 0;
+  mks_PLA_default_e0_temp = PREHEAT_1_TEMP_HOTEND;
+  mks_PLA_default_bed_temp = PREHEAT_1_TEMP_BED;
+  mks_ABS_default_e0_temp = PREHEAT_2_TEMP_HOTEND;
+  mks_ABS_default_bed_temp = PREHEAT_2_TEMP_BED; 
+  mks_AL_default_e0_temp = PREHEAT_AL_TEMP_HOTEND;
+  mks_AL_default_bed_temp = PREHEAT_AL_TEMP_BED; 
+  mks_language = 6;    //6:English
+  mks_filament_det_enable = 1;
 }
 
 xyz_pos_t position_before_pause;
@@ -91,6 +126,8 @@ void MKS_pause_print_move() {
 
   destination.set(X_MIN_POS + mks_park_pos.x, Y_MIN_POS + mks_park_pos.y);
   prepare_internal_move_to_destination(park_speed_xy);
+
+  filament_change_flg = true;
 }
 
 void MKS_resume_print_move() {
@@ -148,6 +185,8 @@ const uint16_t MKSList_Home[] PROGMEM = {
   VP_T_Bed_Is, VP_T_Bed_Set,
   // FAN
   VP_Fan0_Percentage,
+
+  VP_ZPos,
   // Language
   // VP_HOME_Dis,
 
@@ -162,7 +201,7 @@ const uint16_t MKSList_Setting[] PROGMEM = {
   // FAN
   VP_Fan0_Percentage,
   // Language
-  VP_Setting_Dis,
+
   0x0000
 };
 
@@ -174,7 +213,7 @@ const uint16_t MKSList_Tool[] PROGMEM = {
   // FAN
   VP_Fan0_Percentage,
   // Language
-  VP_Tool_Dis,
+  
   // LCD BLK
   VP_LCD_BLK,
   0x0000
@@ -190,7 +229,6 @@ const uint16_t MKSList_EXTRUE[] PROGMEM = {
 
   VP_Filament_distance,
   VP_Filament_speed,
-
   0x0000
 };
 
@@ -212,7 +250,6 @@ const uint16_t MKSList_MOVE[] PROGMEM = {
   VP_T_Bed_Is, VP_T_Bed_Set,
   // FAN
   VP_Fan0_Percentage,
-
   0x0000
 };
 
@@ -225,24 +262,49 @@ const uint16_t MKSList_Print[] PROGMEM = {
   VP_Fan0_Percentage,
   // Print Percent
   VP_PrintProgress_Percentage,
-
+  
   VP_PrintTime,
 
   VP_Flowrate_E0,
-  VP_Flowrate_E1,
+  //VP_Flowrate_E1,
   VP_Feedrate_Percentage,
 
   VP_PrintTime_H,
   VP_PrintTime_M,
   VP_PrintTime_S,
 
-  VP_XPos,
-  VP_YPos,
+  //VP_XPos,
+  //VP_YPos,
   VP_ZPos,
 
   0x0000
 };
+const uint16_t MKSList_PrintPause[] PROGMEM = {
+  // E Temp
+  REPEAT(EXTRUDERS, MKSLIST_E_ITEM)
+  // HB Temp
+  VP_T_Bed_Is, VP_T_Bed_Set,
+  // FAN
+  VP_Fan0_Percentage,
+  // Print Percent
+  VP_PrintProgress_Percentage_1,
+  
+  VP_PrintTime,
 
+  VP_Flowrate_E0,
+  //VP_Flowrate_E1,
+  VP_Feedrate_Percentage,
+
+  VP_PrintTime_H,
+  VP_PrintTime_M,
+  VP_PrintTime_S,
+
+  //VP_XPos,
+  //VP_YPos,
+  VP_ZPos,
+
+  0x0000
+};
 const uint16_t MKSList_SD_File[] PROGMEM = {
   VP_SD_FileName0, VP_SD_FileName1,
   VP_SD_FileName2, VP_SD_FileName3,
@@ -345,16 +407,16 @@ const uint16_t MKSList_Level_Point[] PROGMEM = {
   VP_Fan0_Percentage,
 
   // Level Point
-  VP_Level_Point_One_X,
-  VP_Level_Point_One_Y,
-  VP_Level_Point_Two_X,
-  VP_Level_Point_Two_Y,
-  VP_Level_Point_Three_X,
-  VP_Level_Point_Three_Y,
-  VP_Level_Point_Four_X,
-  VP_Level_Point_Four_Y,
-  VP_Level_Point_Five_X,
-  VP_Level_Point_Five_Y,
+  // VP_Level_Point_One_X,
+  // VP_Level_Point_One_Y,
+  // VP_Level_Point_Two_X,
+  // VP_Level_Point_Two_Y,
+  // VP_Level_Point_Three_X,
+  // VP_Level_Point_Three_Y,
+  // VP_Level_Point_Four_X,
+  // VP_Level_Point_Four_Y,
+  // VP_Level_Point_Five_X,
+  // VP_Level_Point_Five_Y,
 
   0x0000
 };
@@ -429,8 +491,29 @@ const uint16_t MKSTMC_Config[] PROGMEM = {
 };
 
 const uint16_t MKSAuto_Level[] PROGMEM = {
+  // E Temp
+  REPEAT(EXTRUDERS, MKSLIST_E_ITEM)
+  // HB Temp
+  VP_T_Bed_Is, VP_T_Bed_Set,
   VP_MESH_LEVEL_POINT_DIS,
-  VP_ZPos,
+  //VP_ZPos,
+  VP_LEVELING_POINT_OFFSET1,
+  VP_LEVELING_POINT_OFFSET2,
+  VP_LEVELING_POINT_OFFSET3,
+  VP_LEVELING_POINT_OFFSET4,
+  VP_LEVELING_POINT_OFFSET5,
+  VP_LEVELING_POINT_OFFSET6,
+  VP_LEVELING_POINT_OFFSET7,
+  VP_LEVELING_POINT_OFFSET8,
+  VP_LEVELING_POINT_OFFSET9,
+  VP_LEVELING_POINT_OFFSET10,
+  VP_LEVELING_POINT_OFFSET11,
+  VP_LEVELING_POINT_OFFSET12,
+  VP_LEVELING_POINT_OFFSET13,
+  VP_LEVELING_POINT_OFFSET14,
+  VP_LEVELING_POINT_OFFSET15,
+  VP_LEVELING_POINT_OFFSET16,      
+  VP_OFFSET_Z,
   0x0000
 };
 
@@ -448,6 +531,23 @@ const uint16_t MKSBabyStep[] PROGMEM = {
   0x0000
 };
 
+const uint16_t MKPreheat[] PROGMEM = {
+  VP_T_E0_Is,
+  VP_T_E0_Set, 
+  VP_T_Bed_Is, 
+  VP_T_Bed_Set,
+  0x0000
+};
+
+const uint16_t MKSFilchange[] PROGMEM = {
+  VP_T_E0_Is,
+  VP_T_E0_Set, 
+  VP_Filament_distance,
+  VP_Filament_speed,
+  0x0000
+};
+
+
 const uint16_t MKSList_About[] PROGMEM = {
   // Marlin version
   VP_MARLIN_VERSION,
@@ -457,45 +557,147 @@ const uint16_t MKSList_About[] PROGMEM = {
   0x0000
 };
 
+const uint16_t MKSPrintStopPopup[] PROGMEM = {
+   // E Temp
+  REPEAT(EXTRUDERS, MKSLIST_E_ITEM)
+  // HB Temp
+  VP_T_Bed_Is, VP_T_Bed_Set,
+  // FAN
+  VP_Fan0_Percentage,
+  // Print Percent
+  //VP_PrintProgress_Percentage,
+
+  VP_PrintTime,
+
+  VP_PrintTime_H,
+  VP_PrintTime_M,
+  VP_PrintTime_S,
+
+  VP_Fan0_Percentage,
+  VP_Feedrate_Percentage,
+
+  VP_ZPos,
+
+  0x0000
+};
+
+const uint16_t MKSFanCTRL[] PROGMEM = {
+  VP_Fan0_Percentage,
+  0x0000
+};
+const uint16_t MKSFeedrate[] PROGMEM = {
+  VP_Feedrate_Percentage,
+  0x0000
+};
+const uint16_t MKSFlow[] PROGMEM = {
+  VP_Flowrate_E0,
+  0x0000
+};
+
+const uint16_t MKSList_FILAMET_HOTB_T[] PROGMEM = {
+  VP_T_E0_Set,
+  VP_T_Bed_Set,	
+  0x0000
+};
+const uint16_t MKSList_FILAMET_E_T[] PROGMEM = {
+  VP_T_E0_Set,
+  VP_T_Bed_Set,	
+  0x0000
+};
+const uint16_t MKSList_PrintConfirm[] = {
+  VP_SD_Print_Filename,
+  0x0000
+};
+const uint16_t MKSList_DEFAULT_PLA[] ={
+	VP_DEFAULT_PLA_T_TEMP,
+	VP_DEFAULT_PLA_B_TEMP,
+	0x0000
+};
+const uint16_t MKSList_DEFAULT_ABS[] ={
+	VP_DEFAULT_ABS_T_TEMP,
+	VP_DEFAULT_ABS_B_TEMP,
+	0x0000
+};
+const uint16_t MKSList_DEFAULT_AL[] ={
+	VP_DEFAULT_AL_T_TEMP,
+	VP_DEFAULT_AL_B_TEMP,
+	0x0000
+};
+
+
+const uint16_t MKSheating[] PROGMEM = {
+  VP_T_E0_Is,
+  VP_T_E0_Set, 
+  0x0000
+};
+
+const uint16_t MKSTest[] PROGMEM = {
+  VP_T_E0_Is,
+  VP_T_Bed_Is, 
+  // VP_TEST_TEMP1,
+  // VP_TEST_TEMP2,
+  VP_TEST_TEMP3,
+  VP_TEST_TEMP4,
+  //VP_TEST_TEMP5,
+  0x0000
+};
 // Page data updata
 const struct VPMapping VPMap[] PROGMEM = {
   { MKSLCD_SCREEN_BOOT, VPList_Boot },                        // Boot Page to show logo  0
   { MKSLCD_SCREEN_HOME, MKSList_Home },                       // Home, Page 1
   { MKSLCD_SCREEN_SETTING, MKSList_Setting },                 // Setting, Page 2
-  { MKSLCD_SCREEM_TOOL, MKSList_Tool },                       // Page 3
-  { MKSLCD_SCREEN_EXTRUDE_P1, MKSList_EXTRUE },               // Page 4
-  { MKSLCD_SCREEN_EXTRUDE_P2, MKSList_EXTRUE },               // Page 11
-  { MKSLCD_PAUSE_SETTING_EX, MKSList_EXTRUE },                // Page 57
-  { MKSLCD_PAUSE_SETTING_EX2, MKSList_EXTRUE },               // Page 61
-  { MKSLCD_SCREEN_LEVEL, MKSList_LEVEL },                     // Page 5
-  { MKSLCD_SCREEN_MOVE, MKSList_MOVE },                       // Page 6
-  { MKSLCD_SCREEN_PRINT, MKSList_Print },                     // Page 7
-  { MKSLCD_SCREEN_PAUSE, MKSList_Print },                     // Page 26
-  { MKSLCD_SCREEN_CHOOSE_FILE, MKSList_SD_File },             // Page 15
-  { MKSLCD_SCREEN_MOTOR_PLUSE, MKSList_Pluse },               // Page 51
-  { MKSLCD_SCREEN_MOTOR_SPEED, MKSList_MaxSpeed },            // Page 55
-  { MKSLCD_SCREEN_MOTOR_ACC_MAX, MKSList_MaxAcc },            // Page 53
-  { MKSLCD_SCREEN_LEVEL_DATA, MKSList_Level_Point },          // Page 48
-  { MKSLCD_PrintPause_SET, MKSList_PrintPauseConfig },        // Page 49
-  { MKSLCD_FILAMENT_DATA, MKSList_SD_File },                  // Page 50
-  { MKSLCD_SCREEN_Config, MKSList_TempOnly },                 // Page 46
-  { MKSLCD_SCREEN_Config_MOTOR, MKSList_MotoConfig },         // Page 47
-  { MKSLCD_PID, MKSList_PID },                                // Page 56
-  { MKSLCD_ABOUT, MKSList_About },                            // Page 36
-  { MKSLCD_SCREEN_PRINT_CONFIG, MKSList_Level_PrintConfig },  // Page 60
-  { MKSLCD_SCREEN_EX_CONFIG, MKSList_EX_Config },             // Page 65
-  { MKSLCD_SCREEN_TMC_Config, MKSTMC_Config },                // Page 70
-  { MKSLCD_AUTO_LEVEL, MKSAuto_Level },                       // Page 73
-  { MKSLCD_Screen_Offset_Config, MKSOffset_Config },          // Page 30
-  { MKSLCD_Screen_PMove, MKSList_MOVE },                      // Page 64
-  { MKSLCD_Screen_Baby, MKSBabyStep },                        // Page 71
-  //{ MKSLCD_SCREEN_LEVEL_DATA, MKSList_SD_File},
-  //{ MKSLCD_SCREEN_HOME, VPList_Boot },
+  { MKSLCD_SCREEM_TOOL, MKSList_Tool },                       
+  { MKSLCD_SCREEN_EXTRUDE_P1, MKSList_EXTRUE },               
+  { MKSLCD_SCREEN_EXTRUDE_P2, MKSList_EXTRUE },               
+  // { MKSLCD_PAUSE_SETTING_EX, MKSList_EXTRUE },                
+  // { MKSLCD_PAUSE_SETTING_EX2, MKSList_EXTRUE },               
+  { MKSLCD_SCREEN_LEVEL, MKSList_LEVEL },                     
+  { MKSLCD_SCREEN_MOVE, MKSList_MOVE },                       
+  { MKSLCD_SCREEN_PRINT, MKSList_Print },                     
+  { MKSLCD_SCREEN_PAUSE, MKSList_PrintPause },                     
+  { MKSLCD_SCREEN_CHOOSE_FILE, MKSList_SD_File },             
+  //{ MKSLCD_SCREEN_MOTOR_PLUSE, MKSList_Pluse },               
+  //{ MKSLCD_SCREEN_MOTOR_SPEED, MKSList_MaxSpeed },            
+  //{ MKSLCD_SCREEN_MOTOR_ACC_MAX, MKSList_MaxAcc },            
+  //{ MKSLCD_SCREEN_LEVEL_DATA, MKSList_Level_Point },          
+  //{ MKSLCD_PrintPause_SET, MKSList_PrintPauseConfig },        
+  //{ MKSLCD_FILAMENT_DATA, MKSList_SD_File },                  
+  //{ MKSLCD_SCREEN_Config, MKSList_TempOnly },                 
+  //{ MKSLCD_SCREEN_Config_MOTOR, MKSList_MotoConfig },         
+  //{ MKSLCD_PID, MKSList_PID },                                
+  //{ MKSLCD_ABOUT, MKSList_About },                            
+  //{ MKSLCD_SCREEN_PRINT_CONFIG, MKSList_Level_PrintConfig },  
+  //{ MKSLCD_SCREEN_EX_CONFIG, MKSList_EX_Config },             
+  //{ MKSLCD_SCREEN_TMC_Config, MKSTMC_Config },                
+  { MKSLCD_AUTO_LEVEL, MKSAuto_Level },      
+  { MKSLCD_Screen_AUTO_LEVEL_POPUP1, MKSAuto_Level },                      
+  //{ MKSLCD_Screen_Offset_Config, MKSOffset_Config },          
+  //{ MKSLCD_Screen_PMove, MKSList_MOVE },                      
+  { MKSLCD_Screen_Baby, MKSBabyStep },    
+  { DGUSLCD_SCREEN_FAN_CTRL, MKSFanCTRL },   
+
+  {MKSLCD_Screen_PRINT_SPEED,MKSFeedrate},
+  {MKSLCD_Screen_FLOW_SPEED,MKSFlow},
+  {MKSLCD_Screen_FAN_SPEED,MKSFanCTRL},
+
+  {MKSLCD_Screen_PRINT_FLAMENT,MKSList_FILAMET_E_T},
+  {MKSLCD_Screen_PRINT_FLAMENT_HOTB,MKSList_FILAMET_HOTB_T},
+  {MKS_LCD_PREHEAT_DEFAULT_PLA,MKSList_DEFAULT_PLA},
+  {MKS_LCD_PREHEAT_DEFAULT_ABS,MKSList_DEFAULT_ABS},
+  {MKS_LCD_PREHEAT_DEFAULT_AL,MKSList_DEFAULT_AL},
+  
+  { MKSLCD_Screen_EXTRUDE_HEATING_POPUP, MKSheating },
+  { MKS_LCD_PREHEAT, MKPreheat },                       
+  { MKSLCD_SCREEN_FILCHANGE, MKSFilchange }, 
+  { MKSLCD_SCREEN_PRINT_STAT_STOP_POPUP, MKSPrintStopPopup },
+  { MKSLCD_SCREEN_PRINT_PASU_STOP_POPUP, MKSPrintStopPopup },                    
+  //{ MKSLCD_SCREEN_PRINT_CONFIRM,MKSList_PrintConfirm},
+  {MKSLCD_SCREEN_TEST, MKSTest},
   { 0, nullptr } // List is terminated with an nullptr as table entry.
 };
 
 const char MarlinVersion[] PROGMEM = SHORT_BUILD_VERSION;
-const char H43Version[] PROGMEM = "MKS H43_V1.30";
+const char H43Version[] PROGMEM = "ZNP_ROBIN_NANO_DW V2.0";
 const char Updata_Time[] PROGMEM = STRING_DISTRIBUTION_DATE;
 
 const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
@@ -545,7 +747,16 @@ const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
   #if HAS_HOTEND
     VPHELPER(VP_T_E0_Is, &thermalManager.temp_hotend[0].celsius, nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<0>),
     VPHELPER(VP_T_E0_Set, &thermalManager.temp_hotend[0].target, ScreenHandler.HandleTemperatureChanged, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-    VPHELPER(VP_Flowrate_E0, &planner.flow_percentage[ExtUI::extruder_t::E0], ScreenHandler.HandleFlowRateChanged, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+	  
+    VPHELPER(VP_T_E0_Step, &manualE0_T_Step, ScreenHandler.GetManualE0_T_step, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+    VPHELPER(VP_T_E0_Adjust, nullptr, ScreenHandler.HandleManualE0_T, nullptr),
+    VPHELPER(VP_T_Bed_Step, &manualHotB_T_Step, ScreenHandler.GetManualHotB_T_step, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+    VPHELPER(VP_T_Bed_Adjust, nullptr, ScreenHandler.HandleManualHotB_T, nullptr),
+	  
+    VPHELPER(VP_Flowrate_E0_Step,&FlowPercentageStep, ScreenHandler.GetFlowRateStep, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+    VPHELPER(VP_Flowrate_E0_Adjust,&planner.flow_percentage[ExtUI::extruder_t::E0], ScreenHandler.HandleFlowRateChanged,ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+    VPHELPER(VP_Flowrate_E0, &planner.flow_percentage[ExtUI::extruder_t::E0], nullptr, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+    
     VPHELPER(VP_EPos, &destination.e, nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
     VPHELPER(VP_MOVE_E0, nullptr, ScreenHandler.HandleManualExtrude, nullptr),
     VPHELPER(VP_E0_CONTROL, &thermalManager.temp_hotend[0].target, ScreenHandler.HandleHeaterControl, nullptr),
@@ -564,9 +775,18 @@ const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
       VPHELPER(VP_UNLOAD_Filament, nullptr, ScreenHandler.MKS_FilamentUnLoad, nullptr),
       VPHELPER(VP_Filament_distance, &distanceFilament, ScreenHandler.GetManualFilament, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
       VPHELPER(VP_Filament_speed, &filamentSpeed_mm_s, ScreenHandler.GetManualFilamentSpeed, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+      
+      VPHELPER(VP_Extrude_Cancel_heating, nullptr, ScreenHandler.MKS_FilamentCancelHeating, nullptr),
+      VPHELPER(VP_Extrude_Load, nullptr, ScreenHandler.MKS_Extrude_load_popup, nullptr),
+      VPHELPER(VP_Extrude_Unload, nullptr, ScreenHandler.MKS_Extrude_unload_popup, nullptr),
     #endif
-  #endif
+  #endif 
+  //during print change filament
+  VPHELPER(VP_E0_Print_Filament_load, nullptr, ScreenHandler.MKS_PrintFilamentLoad, nullptr),
+  VPHELPER(VP_E0_Print_Filament_unload, nullptr, ScreenHandler.MKS_PrintFilamentUnLoad, nullptr),
 
+  VPHELPER(VP_E0_Print_Filament_load_confirm, nullptr, ScreenHandler.MKS_PrintFilamentLoad_Confirm, nullptr),
+  VPHELPER(VP_E0_Print_Filament_unload_confirm, nullptr, ScreenHandler.MKS_PrintFilamentUnLoad_Confirm, nullptr),
   #if HAS_MULTI_HOTEND
     VPHELPER(VP_T_E1_Is, &thermalManager.temp_hotend[1].celsius, nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<0>),
     VPHELPER(VP_T_E1_Set, &thermalManager.temp_hotend[1].target, ScreenHandler.HandleTemperatureChanged, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
@@ -602,15 +822,36 @@ const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
 
   // Fan Data
   #if HAS_FAN
+  #if 0
     #define FAN_VPHELPER(N)                                                                                                                    \
-      VPHELPER(VP_Fan##N##_Percentage, &thermalManager.fan_speed[N], ScreenHandler.DGUSLCD_SetUint8, ScreenHandler.DGUSLCD_SendFanToDisplay), \
-      VPHELPER(VP_FAN##N##_CONTROL, &thermalManager.fan_speed[N], ScreenHandler.HandleFanControl, nullptr),                               \
-      VPHELPER(VP_FAN##N##_STATUS, &thermalManager.fan_speed[N], nullptr, ScreenHandler.DGUSLCD_SendFanStatusToDisplay),
+     VPHELPER(VP_Fan##N##_Percentage, &thermalManager.fan_speed[N], ScreenHandler.DGUSLCD_SetUint8, ScreenHandler.DGUSLCD_SendFanToDisplay), \
+     VPHELPER(VP_FAN##N##_CONTROL, &thermalManager.fan_speed[N], ScreenHandler.HandleFanControl, nullptr),                               \
+     VPHELPER(VP_FAN##N##_STATUS, &thermalManager.fan_speed[N], nullptr, ScreenHandler.DGUSLCD_SendFanStatusToDisplay),
     REPEAT(FAN_COUNT, FAN_VPHELPER)
   #endif
+  #endif
+   VPHELPER(VP_Fan0_Percentage_step,&FanPercentageStep,ScreenHandler.GetFanPercentageStep, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+   VPHELPER(VP_Fan0_Percentage_Adjust,&thermalManager.fan_speed[0],ScreenHandler.HandleFanPercentageAdjust,ScreenHandler.DGUSLCD_SendFanToDisplay),
+   VPHELPER(VP_Fan0_Percentage, &thermalManager.fan_speed[0], nullptr, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
 
   // Feedrate
-  VPHELPER(VP_Feedrate_Percentage, &feedrate_percentage, ScreenHandler.DGUSLCD_SetValueDirectly<int16_t>, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+   VPHELPER(VP_Feedrate_Percentage_step,&FeedratePercentageStep,ScreenHandler.GetFeedratePercentageStep, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+   VPHELPER(VP_Feedrate_Percentage_Adjust,&feedrate_percentage,ScreenHandler.HandleFeedratePercentageAdjust, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+   VPHELPER(VP_Feedrate_Percentage, &feedrate_percentage, nullptr, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+
+  VPHELPER(VP_PLA_ABS_SET, nullptr, ScreenHandler.HandleSetPLAorABS_MKS, nullptr),
+  VPHELPER(VP_DEFAULT_PLA_T_TEMP,&mks_PLA_default_e0_temp,ScreenHandler.GetDefault_Temp_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  VPHELPER(VP_DEFAULT_PLA_B_TEMP,&mks_PLA_default_bed_temp,ScreenHandler.GetDefault_Temp_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  VPHELPER(VP_DEFAULT_ABS_T_TEMP,&mks_ABS_default_e0_temp,ScreenHandler.GetDefault_Temp_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  VPHELPER(VP_DEFAULT_ABS_B_TEMP,&mks_ABS_default_bed_temp,ScreenHandler.GetDefault_Temp_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  VPHELPER(VP_DEFAULT_AL_T_TEMP,&mks_AL_default_e0_temp,ScreenHandler.GetDefault_Temp_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  VPHELPER(VP_DEFAULT_AL_B_TEMP,&mks_AL_default_bed_temp,ScreenHandler.GetDefault_Temp_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  VPHELPER(VP_DEFAULT_TEMP_SAVE,nullptr,ScreenHandler.HandleSetPLAorABS_SAVE,nullptr),
+
+  VPHELPER(VP_ZNP_LANGUAGE,&mks_language,ScreenHandler.GetLanguage_MKS,ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  VPHELPER(VP_ZNP_LANGUAGE_SAVE,nullptr,ScreenHandler.HandleLanguage_SAVE,nullptr),
+
+  VPHELPER(VP_Fan0_Percentage_pic, nullptr, ScreenHandler.HandleSetFan_MKS, nullptr),
 
   // Position Data
   VPHELPER(VP_XPos, &current_position.x, nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
@@ -618,20 +859,37 @@ const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
   VPHELPER(VP_ZPos, &current_position.z, nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
 
   // Level Point Set
-  VPHELPER(VP_Level_Point_One_X, &mks_corner_offsets[0].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_One_Y, &mks_corner_offsets[0].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_Two_X, &mks_corner_offsets[1].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_Two_Y, &mks_corner_offsets[1].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_Three_X, &mks_corner_offsets[2].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_Three_Y, &mks_corner_offsets[2].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_Four_X, &mks_corner_offsets[3].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_Four_Y, &mks_corner_offsets[3].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_Five_X, &mks_corner_offsets[4].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
-  VPHELPER(VP_Level_Point_Five_Y, &mks_corner_offsets[4].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_One_X, &mks_corner_offsets[0].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_One_Y, &mks_corner_offsets[0].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_Two_X, &mks_corner_offsets[1].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_Two_Y, &mks_corner_offsets[1].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_Three_X, &mks_corner_offsets[2].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_Three_Y, &mks_corner_offsets[2].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_Four_X, &mks_corner_offsets[3].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_Four_Y, &mks_corner_offsets[3].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_Five_X, &mks_corner_offsets[4].x, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+  // VPHELPER(VP_Level_Point_Five_Y, &mks_corner_offsets[4].y, ScreenHandler.HandleChangeLevelPoint_MKS, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
+
+  VPHELPER(VP_LEVELING_POINT_OFFSET1, &z_values[0][0], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET2, &z_values[0][1], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET3, &z_values[0][2], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET4, &z_values[0][3], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET5, &z_values[1][0], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET6, &z_values[1][1], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET7, &z_values[1][2], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET8, &z_values[1][3], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET9, &z_values[2][0], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET10, &z_values[2][1], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET11, &z_values[2][2], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET12, &z_values[2][3], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET13, &z_values[3][0], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET14, &z_values[3][1], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET15, &z_values[3][2], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+  VPHELPER(VP_LEVELING_POINT_OFFSET16, &z_values[3][3], nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),  
 
   // Print Progress
   VPHELPER(VP_PrintProgress_Percentage, nullptr, nullptr, ScreenHandler.DGUSLCD_SendPrintProgressToDisplay),
-
+  VPHELPER(VP_PrintProgress_Percentage_1, nullptr, nullptr, ScreenHandler.DGUSLCD_SendPrintProgressToDisplay),
   // LCD Control
   VPHELPER(VP_LCD_BLK, &lcd_default_light, ScreenHandler.LCD_BLK_Adjust, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
 
@@ -727,14 +985,25 @@ const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
   VPHELPER(VP_EEPROM_CTRL, nullptr, ScreenHandler.EEPROM_CTRL, nullptr),
   VPHELPER(VP_LEVEL_BUTTON, nullptr, ScreenHandler.Level_Ctrl_MKS, nullptr),
   VPHELPER(VP_LANGUAGE_CHANGE, nullptr, ScreenHandler.LanguageChange_MKS, nullptr),
+  //VPHELPER(VP_Prepare_page, nullptr, ScreenHandler.Perph_page_MKS, nullptr),
+  //VPHELPER(VP_FAN_page, nullptr, ScreenHandler.fan_page_MKS, nullptr),
+  VPHELPER(VP_PRINT_SET, nullptr, ScreenHandler.print_set_page_MKS, nullptr),
+  VPHELPER(VP_PREPARE_PAGE_SET, nullptr, ScreenHandler.PREPARE_PAGE_SET, nullptr),
+  VPHELPER(VP_SETTING_PAGE_SET, nullptr, ScreenHandler.SETTING_PAGE_JUMP, nullptr),
+  VPHELPER(VP_AUTO_LEVEL_SET, nullptr, ScreenHandler.AUTO_LEVEL_POPUP, nullptr),
+  VPHELPER(VP_FAN_ON_OFF_VAL, nullptr, ScreenHandler.SET_FAN_ON_OFF_HANDLER, nullptr),
+  VPHELPER(VP_PRINT_SETTINGS, nullptr, ScreenHandler.PRINT_SETTING_HANDLER, nullptr),
+  VPHELPER(VP_SETTING_TEMP_PAGE_SET, nullptr, ScreenHandler.SETTING_TEMPER_PAGE_JUMP, nullptr),
+  VPHELPER(VP_SETTING_FILAMENT_DET, nullptr, ScreenHandler.SET_FILAMENT_DET_HANDLER, nullptr),
 
-  //VPHELPER(VP_SD_Print_LiveAdjustZ, nullptr, ScreenHandler.HandleLiveAdjustZ, nullptr),
+  VPHELPER(VP_RUNOUT_Confirm, nullptr, ScreenHandler.Filament_Runout_Comfirm, nullptr),
 
+  
   VPHELPER(VP_SD_Print_LiveAdjustZ_Confirm, nullptr, ScreenHandler.ZoffsetConfirm, nullptr),
 
-  VPHELPER(VP_ZOffset_Distance,nullptr ,ScreenHandler.GetZoffsetDistance, nullptr),
-  VPHELPER(VP_MESH_LEVEL_ADJUST, nullptr, ScreenHandler.MeshLevelDistanceConfig, nullptr),
-  VPHELPER(VP_MESH_LEVEL_POINT,nullptr, ScreenHandler.MeshLevel,nullptr),
+  VPHELPER(VP_ZOffset_Distance,&ZOffset_distanceStep ,ScreenHandler.GetZoffsetDistance, ScreenHandler.DGUSLCD_SendWordValueToDisplay),//打印界面下的zoffset的步长
+  VPHELPER(VP_MESH_LEVEL_ADJUST, &AUTO_ZOffset_distanceStep, ScreenHandler.MeshLevelDistanceConfig, ScreenHandler.DGUSLCD_SendWordValueToDisplay),//自动调平界面下的步长
+  VPHELPER(VP_MESH_LEVEL_POINT, nullptr, ScreenHandler.MeshLevel,nullptr),
 
   #if ENABLED(PREVENT_COLD_EXTRUSION)
     VPHELPER(VP_Min_EX_T_E, &thermalManager.extrude_min_temp, ScreenHandler.GetMinExtrudeTemp, ScreenHandler.DGUSLCD_SendWordValueToDisplay),
@@ -755,6 +1024,8 @@ const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
     VPHELPER(VP_SD_FileSelected, nullptr, ScreenHandler.DGUSLCD_SD_FileSelected, nullptr),
     VPHELPER(VP_SD_ScrollEvent, nullptr, ScreenHandler.DGUSLCD_SD_ScrollFilelist, nullptr),
     VPHELPER(VP_SD_FileSelectConfirm, nullptr, ScreenHandler.DGUSLCD_SD_StartPrint, nullptr),
+    VPHELPER(VP_SD_Print_Again, nullptr, ScreenHandler.DGUSLCD_SD_PrintAgain, nullptr),
+
     VPHELPER_STR(VP_SD_FileName0, nullptr, VP_SD_FileName_LEN, nullptr, ScreenHandler.DGUSLCD_SD_SendFilename),
     VPHELPER_STR(VP_SD_FileName1, nullptr, VP_SD_FileName_LEN, nullptr, ScreenHandler.DGUSLCD_SD_SendFilename),
     VPHELPER_STR(VP_SD_FileName2, nullptr, VP_SD_FileName_LEN, nullptr, ScreenHandler.DGUSLCD_SD_SendFilename),
@@ -770,12 +1041,14 @@ const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
     VPHELPER(VP_SD_Print_Setting, nullptr, ScreenHandler.DGUSLCD_SD_PrintTune, nullptr),
     #if ENABLED(BABYSTEPPING)
       VPHELPER(VP_SD_Print_LiveAdjustZ, nullptr, ScreenHandler.HandleLiveAdjustZ, ScreenHandler.DGUSLCD_SendFloatAsIntValueToDisplay<2>),
-      VPHELPER(VP_ZOffset_DE_DIS, &z_offset_add, nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+      //VPHELPER(VP_ZOffset_DE_DIS, &z_offset_add, nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+      VPHELPER(VP_ZOffset_DE_DIS, &probe.offset.z, nullptr, ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
     #endif
     #if HAS_BED_PROBE
       VPHELPER(VP_OFFSET_X, &probe.offset.x, ScreenHandler.GetOffsetValue,ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
       VPHELPER(VP_OFFSET_Y, &probe.offset.y, ScreenHandler.GetOffsetValue,ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
-      VPHELPER(VP_OFFSET_Z, &probe.offset.z, ScreenHandler.GetOffsetValue,ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+      //VPHELPER(VP_OFFSET_Z, &probe.offset.z, ScreenHandler.GetOffsetValue,ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
+      VPHELPER(VP_OFFSET_Z, &probe.offset.z, nullptr,ScreenHandler.DGUSLCD_SendFloatAsLongValueToDisplay<2>),
     #endif
   #else
     VPHELPER(VP_SD_FileSelected, nullptr, ScreenHandler.PrintReturn, nullptr),
@@ -784,6 +1057,11 @@ const struct DGUS_VP_Variable ListOfVP[] PROGMEM = {
   #if ENABLED(DGUS_UI_WAITING)
     VPHELPER(VP_WAITING_STATUS, nullptr, nullptr, ScreenHandler.DGUSLCD_SendWaitingStatusToDisplay),
   #endif
+
+  VPHELPER(VP_TEST_TEMP1, nullptr, nullptr, ScreenHandler.DGUSLCD_SendStringToDisplay_Language_MKS),
+  VPHELPER(VP_TEST_TEMP2, nullptr, nullptr, ScreenHandler.DGUSLCD_SendStringToDisplay_Language_MKS),
+  VPHELPER(VP_TEST_TEMP3, nullptr, nullptr, ScreenHandler.DGUSLCD_SendStringToDisplay_Language_MKS),
+  VPHELPER(VP_TEST_TEMP4, nullptr, nullptr, ScreenHandler.DGUSLCD_SendStringToDisplay_Language_MKS),
 
   // Messages for the User, shared by the popup and the kill screen. They can't be autouploaded as we do not buffer content.
   //{.VP = VP_MSGSTR1, .memadr = nullptr, .size = VP_MSGSTR1_LEN, .set_by_display_handler = nullptr, .send_to_display_handler = ScreenHandler.DGUSLCD_SendStringToDisplayPGM},

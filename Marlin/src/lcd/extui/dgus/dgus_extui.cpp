@@ -59,6 +59,7 @@ namespace ExtUI {
   void onFilamentRunout(const extruder_t extruder) {}
 
   void onUserConfirmRequired(const char * const msg) {
+    #if 0
     if (msg) {
       ScreenHandler.sendinfoscreen(F("Please confirm."), nullptr, msg, nullptr, true, true, false, true);
       ScreenHandler.SetupConfirmAction(setUserConfirmed);
@@ -68,6 +69,7 @@ namespace ExtUI {
       ScreenHandler.SetupConfirmAction(nullptr);
       ScreenHandler.PopToOldScreen();
     }
+    #endif
   }
 
   void onStatusChanged(const char * const msg) { ScreenHandler.setstatusmessage(msg); }

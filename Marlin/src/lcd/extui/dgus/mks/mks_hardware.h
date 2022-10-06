@@ -21,7 +21,7 @@
  */
 #pragma once
 
-#include "../../../inc/MarlinConfigPre.h"
+#include "../../../../inc/MarlinConfigPre.h"
 
 //#include <lvgl.h>
 
@@ -30,6 +30,8 @@
 extern void mks_hardware_test();
 extern void mks_test_get();
 extern void mks_gpio_test();
+void mksStepperTest();
+void init_test_gpio();
 extern uint8_t mks_test_flag;
 #else
   #define mks_test_flag 0

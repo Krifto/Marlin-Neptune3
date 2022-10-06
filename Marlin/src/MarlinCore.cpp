@@ -259,6 +259,7 @@ MarlinState marlin_state = MF_INITIALIZING;
 // For M109 and M190, this flag may be cleared (by M108) to exit the wait loop
 bool wait_for_heatup = true;
 
+
 // For M0/M1, this flag may be cleared (by M108) to exit the wait-for-user loop
 #if HAS_RESUME_CONTINUE
   bool wait_for_user; // = false;
@@ -369,9 +370,11 @@ void startOrResumeJob() {
     TERN_(POWER_LOSS_RECOVERY, recovery.purge());
 
     #ifdef EVENT_GCODE_SD_ABORT
-      queue.inject(F(EVENT_GCODE_SD_ABORT));
+      //queue.inject(F(EVENT_GCODE_SD_ABORT));
+      gcode.process_subcommands_now(PSTR("G28XY"));
+      gcode.process_subcommands_now(PSTR("M84"));      
     #endif
-
+    
     TERN_(PASSWORD_AFTER_SD_PRINT_ABORT, password.lock_machine());
   }
 
@@ -762,11 +765,32 @@ inline void manage_inactivity(const bool no_stepper_sleep=false) {
  *  - Update the Průša MMU2
  *  - Handle Joystick jogging
  */
+extern bool Z_MAX_IO_state;
+extern bool G28_Z_start_flg;
+
 void idle(bool no_stepper_sleep/*=false*/) {
+
+  
   #if ENABLED(MARLIN_DEV_MODE)
     static uint16_t idle_depth = 0;
     if (++idle_depth > 5) SERIAL_ECHOLNPGM("idle() call depth: ", idle_depth);
   #endif
+  
+  #if ZNP_TEST
+  if((READ(PB9)==LOW)&&(G28_Z_start_flg == true))
+  #else
+  if((READ(PC14)==LOW)&&(G28_Z_start_flg == true))
+  #endif
+  {
+    G28_Z_start_flg = false;
+  	//Z_MAX_IO_state = true;
+
+    quickstop_stepper();
+
+    set_current_from_steppers_for_axis(ALL_AXES_ENUM);
+    current_position.z = 0;
+    sync_plan_position();
+  }
 
   // Core Marlin activities
   manage_inactivity(no_stepper_sleep);
@@ -1119,7 +1143,7 @@ void setup() {
   tmc_standby_setup();  // TMC Low Power Standby pins must be set early or they're not usable
 
   // Check startup - does nothing if bootloader sets MCUSR to 0
-  const byte mcu = HAL_get_reset_source();
+  // const byte mcu = HAL_get_reset_source();
   HAL_clear_reset_source();
 
   #if ENABLED(MARLIN_DEV_MODE)
@@ -1251,11 +1275,11 @@ void setup() {
   SETUP_RUN(esp_wifi_init());
 
   // Report Reset Reason
-  if (mcu & RST_POWER_ON) SERIAL_ECHOLNPGM(STR_POWERUP);
-  if (mcu & RST_EXTERNAL) SERIAL_ECHOLNPGM(STR_EXTERNAL_RESET);
-  if (mcu & RST_BROWN_OUT) SERIAL_ECHOLNPGM(STR_BROWNOUT_RESET);
-  if (mcu & RST_WATCHDOG) SERIAL_ECHOLNPGM(STR_WATCHDOG_RESET);
-  if (mcu & RST_SOFTWARE) SERIAL_ECHOLNPGM(STR_SOFTWARE_RESET);
+  // if (mcu & RST_POWER_ON) SERIAL_ECHOLNPGM(STR_POWERUP);
+  // if (mcu & RST_EXTERNAL) SERIAL_ECHOLNPGM(STR_EXTERNAL_RESET);
+  // if (mcu & RST_BROWN_OUT) SERIAL_ECHOLNPGM(STR_BROWNOUT_RESET);
+  // if (mcu & RST_WATCHDOG) SERIAL_ECHOLNPGM(STR_WATCHDOG_RESET);
+  // if (mcu & RST_SOFTWARE) SERIAL_ECHOLNPGM(STR_SOFTWARE_RESET);
 
   // Identify myself as Marlin x.x.x
   SERIAL_ECHOLNPGM("Marlin " SHORT_BUILD_VERSION);
@@ -1622,6 +1646,10 @@ void setup() {
   marlin_state = MF_RUNNING;
 
   SETUP_LOG("setup() completed.");
+
+  SET_OUTPUT(Y_ENABLE_PIN);
+  SET_OUTPUT(Y_STEP_PIN);
+  SET_OUTPUT(Y_DIR_PIN);
 }
 
 /**
@@ -1639,6 +1667,14 @@ void setup() {
  */
 void loop() {
   do {
+    #if BOTH(MKS_TEST, SDSUPPORT)
+    TERN_(MKS_TEST, mks_test_get());
+    if (mks_test_flag == 0x1E) 
+    {
+      mks_gpio_test();
+      mks_hardware_test();
+    }
+    #endif
     idle();
 
     #if ENABLED(SDSUPPORT)

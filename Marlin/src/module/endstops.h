@@ -131,9 +131,10 @@ class Endstops {
       static uint8_t endstop_poll_count;    // Countdown from threshold for polling
     #endif
 
+	
   public:
     Endstops() {};
-
+	
     /**
      * Initialize the endstop pins
      */

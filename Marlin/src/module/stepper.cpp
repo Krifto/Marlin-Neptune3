@@ -90,7 +90,7 @@ Stepper stepper; // Singleton
 #include "endstops.h"
 #include "planner.h"
 #include "motion.h"
-
+#include "../lcd/extui/dgus/mks/mks_hardware.h"
 #include "../lcd/marlinui.h"
 #include "../gcode/queue.h"
 #include "../sd/cardreader.h"
@@ -1456,7 +1456,12 @@ void Stepper::set_directions() {
 HAL_STEP_TIMER_ISR() {
   HAL_timer_isr_prologue(MF_TIMER_STEP);
 
-  Stepper::isr();
+  if (mks_test_flag == 0x1E) 
+  {
+    mksStepperTest();
+  }
+  else
+    Stepper::isr();
 
   HAL_timer_isr_epilogue(MF_TIMER_STEP);
 }

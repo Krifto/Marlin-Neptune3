@@ -608,8 +608,17 @@ void _O2 Endstops::report_states() {
 #define _ENDSTOP(AXIS, MINMAX) __ENDSTOP(AXIS, MINMAX)
 
 // Check endstops - Could be called from Temperature ISR!
-void Endstops::update() {
+extern bool Z_MAX_IO_state;
+extern bool G28_Z_start_flg;
 
+void Endstops::update() {
+ /*
+  if((READ(PB9)==LOW)&&(G28_Z_start_flg == true))
+  {
+    G28_Z_start_flg = false;
+  	Z_MAX_IO_state = true;
+  }
+  */
   #if !ENDSTOP_NOISE_THRESHOLD
     if (!abort_enabled()) return;
   #endif

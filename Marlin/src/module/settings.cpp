@@ -527,10 +527,19 @@ typedef struct SettingsDataStruct {
   // MKS UI controller
   //
   #if ENABLED(DGUS_LCD_UI_MKS)
-    uint8_t mks_language_index;                         // Display Language
-    xy_int_t mks_corner_offsets[5];                     // Bed Tramming
+    //uint8_t mks_language_index;                         // Display Language
+    //xy_int_t mks_corner_offsets[5];                     // Bed Tramming
     xyz_int_t mks_park_pos;                             // Custom Parking (without NOZZLE_PARK)
-    celsius_t mks_min_extrusion_temp;                   // Min E Temp (shadow M302 value)
+    //celsius_t mks_min_extrusion_temp;                   // Min E Temp (shadow M302 value)
+
+    celsius_t  mks_PLA_default_e0_temp;
+	celsius_t  mks_PLA_default_bed_temp;
+	celsius_t  mks_ABS_default_e0_temp;
+	celsius_t  mks_ABS_default_BED_temp;
+  celsius_t  mks_AL_default_e0_temp;
+	celsius_t  mks_AL_default_BED_temp;
+	uint16_t   mks_language;
+  uint16_t   mks_filament_det_enable;
   #endif
 
   #if HAS_MULTI_LANGUAGE
@@ -1506,10 +1515,18 @@ void MarlinSettings::postprocess() {
     // MKS UI controller
     //
     #if ENABLED(DGUS_LCD_UI_MKS)
-      EEPROM_WRITE(mks_language_index);
-      EEPROM_WRITE(mks_corner_offsets);
+      //EEPROM_WRITE(mks_language_index);
+      //EEPROM_WRITE(mks_corner_offsets);
       EEPROM_WRITE(mks_park_pos);
-      EEPROM_WRITE(mks_min_extrusion_temp);
+      //EEPROM_WRITE(mks_min_extrusion_temp);
+	  EEPROM_WRITE(mks_PLA_default_e0_temp);
+	  EEPROM_WRITE(mks_PLA_default_bed_temp);
+	  EEPROM_WRITE(mks_ABS_default_e0_temp);
+	  EEPROM_WRITE(mks_ABS_default_bed_temp);	  
+    EEPROM_WRITE(mks_AL_default_e0_temp);
+	  EEPROM_WRITE(mks_AL_default_bed_temp);	  
+	  EEPROM_WRITE(mks_language);
+    EEPROM_WRITE(mks_filament_det_enable);
     #endif
 
     //
@@ -2445,10 +2462,18 @@ void MarlinSettings::postprocess() {
       //
       #if ENABLED(DGUS_LCD_UI_MKS)
         _FIELD_TEST(mks_language_index);
-        EEPROM_READ(mks_language_index);
-        EEPROM_READ(mks_corner_offsets);
+        //EEPROM_READ(mks_language_index);
+        //EEPROM_READ(mks_corner_offsets);
         EEPROM_READ(mks_park_pos);
-        EEPROM_READ(mks_min_extrusion_temp);
+        //EEPROM_READ(mks_min_extrusion_temp);
+		EEPROM_READ(mks_PLA_default_e0_temp);
+		EEPROM_READ(mks_PLA_default_bed_temp);
+		EEPROM_READ(mks_ABS_default_e0_temp);
+		EEPROM_READ(mks_ABS_default_bed_temp);	  
+    EEPROM_READ(mks_AL_default_e0_temp);
+		EEPROM_READ(mks_AL_default_bed_temp);	  
+		EEPROM_READ(mks_language);		
+    EEPROM_READ(mks_filament_det_enable);	
       #endif
 
       //

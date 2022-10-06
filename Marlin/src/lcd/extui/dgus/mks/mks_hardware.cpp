@@ -20,11 +20,11 @@
  *
  */
 
-#include "../../../inc/MarlinConfigPre.h"
-
+#include "../../../../inc/MarlinConfigPre.h"
+#include "DGUSScreenHandler.h"
 #if 1//HAS_TFT_LVGL_UI
 
-#include "SPI_TFT.h"
+//#include "SPI_TFT.h"
 
 #if HAS_TFT_LVGL_UI
   #include "tft_lvgl_configuration.h"
@@ -34,14 +34,16 @@
   #include <lvgl.h>
 #endif
 
-#include "../../../MarlinCore.h"
-#include "../../../module/temperature.h"
-#include "../../../sd/cardreader.h"
+#include "../../../../MarlinCore.h"
+#include "../../../../module/temperature.h"
+#include "../../../../sd/cardreader.h"
 
 #if 1//ENABLED(MKS_TEST)
-111
+
+#include "../../../../pins/pins.h"
+
 #include "mks_hardware.h"
-#include "../../../module/endstops.h"
+#include "../../../../module/endstops.h"
 
   bool pw_det_sta, pw_off_sta, mt_det_sta;
   #if PIN_EXISTS(MT_DET_2)
@@ -93,10 +95,10 @@ void mks_test_get()
 #endif
 
 void test_gpio_readlevel_L() {
-  WRITE(WIFI_IO0_PIN, HIGH);
+  //WRITE(WIFI_IO0_PIN, HIGH);
   delay(10);
-  pw_det_sta = (READ(MKS_TEST_POWER_LOSS_PIN) == LOW);
-  pw_off_sta = (READ(MKS_TEST_PS_ON_PIN) == LOW);
+  // pw_det_sta = (READ(MKS_TEST_POWER_LOSS_PIN) == LOW);
+  // pw_off_sta = (READ(MKS_TEST_PS_ON_PIN) == LOW);
   mt_det_sta = (READ(MT_DET_1_PIN) == LOW);
   #if PIN_EXISTS(MT_DET_2)
     mt_det2_sta = (READ(MT_DET_2_PIN) == LOW);
@@ -134,10 +136,10 @@ void test_gpio_readlevel_L() {
 }
 
 void test_gpio_readlevel_H() {
-  WRITE(WIFI_IO0_PIN, LOW);
+  //WRITE(WIFI_IO0_PIN, LOW);
   delay(10);
-  pw_det_sta = (READ(MKS_TEST_POWER_LOSS_PIN) == HIGH);
-  pw_off_sta = (READ(MKS_TEST_PS_ON_PIN) == HIGH);
+  // pw_det_sta = (READ(MKS_TEST_POWER_LOSS_PIN) == HIGH);
+  // pw_off_sta = (READ(MKS_TEST_PS_ON_PIN) == HIGH);
   mt_det_sta = (READ(MT_DET_1_PIN) == HIGH);
   #if PIN_EXISTS(MT_DET_2)
     mt_det2_sta = (READ(MT_DET_2_PIN) == HIGH);
@@ -177,7 +179,8 @@ void test_gpio_readlevel_H() {
 void init_test_gpio() {
   endstops.init();
 
-  SET_OUTPUT(WIFI_IO0_PIN);
+  thermalManager.init();
+  //SET_OUTPUT(WIFI_IO0_PIN);
 
   #if PIN_EXISTS(MT_DET_1)
     SET_INPUT_PULLUP(MT_DET_1_PIN);
@@ -186,10 +189,10 @@ void init_test_gpio() {
     SET_INPUT_PULLUP(MT_DET_2_PIN);
   #endif
 
-  SET_INPUT_PULLUP(MKS_TEST_POWER_LOSS_PIN);
-  SET_INPUT_PULLUP(MKS_TEST_PS_ON_PIN);
-  SET_INPUT_PULLUP(SERVO0_PIN);
+  // SET_INPUT_PULLUP(MKS_TEST_POWER_LOSS_PIN);
+  // SET_INPUT_PULLUP(MKS_TEST_PS_ON_PIN);
 
+  SET_INPUT_PULLUP(MT_DET_1_PIN);
   OUT_WRITE(X_ENABLE_PIN, LOW);
   #if HAS_Y_AXIS
     OUT_WRITE(Y_ENABLE_PIN, LOW);
@@ -204,51 +207,76 @@ void init_test_gpio() {
     OUT_WRITE(E1_ENABLE_PIN, LOW);
   #endif
 
-  #if ENABLED(MKS_HARDWARE_TEST_ONLY_E0)
-    SET_INPUT_PULLUP(PA1);
-    SET_INPUT_PULLUP(PA3);
-    SET_INPUT_PULLUP(PC2);
-    SET_INPUT_PULLUP(PD8);
-    SET_INPUT_PULLUP(PE5);
-    SET_INPUT_PULLUP(PE6);
-    SET_INPUT_PULLUP(PE7);
-  #endif
+
 }
 
 void mks_test_beeper() {
-  WRITE(BEEPER_PIN, HIGH);
+  //WRITE(BEEPER_PIN, HIGH);
   delay(100);
-  WRITE(BEEPER_PIN, LOW);
+  //WRITE(BEEPER_PIN, LOW);
   delay(100);
 }
 
 #if ENABLED(SDSUPPORT)
 
 void mks_gpio_test() {
-  init_test_gpio();
+  
 
   test_gpio_readlevel_L();
   test_gpio_readlevel_H();
   test_gpio_readlevel_L();
-  if (pw_det_sta && pw_off_sta && mt_det_sta
-    #if PIN_EXISTS(MT_DET_2)
-      && mt_det2_sta
-    #endif
-  )
-    //disp_det_ok();
+  if (mt_det_sta)
+    dgusdisplay.WriteVariablePGM(VP_TEST_TEMP3, "Det Yes", 11, 1);
   else
-    //disp_det_error();
+    dgusdisplay.WriteVariablePGM(VP_TEST_TEMP3, "Det Error", 11, 1);
 
-  if (endstopx1_sta && endstopy1_sta && endstopz1_sta && endstopz2_sta)
-    //disp_Limit_ok();
+  if (endstopx1_sta && endstopy1_sta && endstopz1_sta)
+    dgusdisplay.WriteVariablePGM(VP_TEST_TEMP4, "Limit Yes", 11, 1);
   else
-    //disp_Limit_error();
+    dgusdisplay.WriteVariablePGM(VP_TEST_TEMP4, "Limit Error", 11, 1);
 }
+  
+
+
+
+volatile char mksStepperState=0;
+
+void mksStepperTest()
+{
+	if(mksStepperState == 0)
+	{
+		WRITE(X_STEP_PIN, LOW);
+    WRITE(Y_STEP_PIN, LOW);
+    WRITE(Z_STEP_PIN, LOW);
+    WRITE(E0_STEP_PIN, LOW);
+    WRITE(E1_STEP_PIN, LOW);
+    //HAL_Delay(100);
+		mksStepperState = 1;
+	}
+	else
+	{
+		WRITE(X_STEP_PIN, HIGH);
+    WRITE(Y_STEP_PIN, HIGH);
+    WRITE(Z_STEP_PIN, HIGH);
+    WRITE(E0_STEP_PIN, HIGH);
+    WRITE(E1_STEP_PIN, HIGH);
+		mksStepperState = 0;
+    //HAL_Delay(100);
+	}
+	//testCnt++;
+}	
+
+
+
+
 
 void mks_hardware_test() {
   char buf[30] = {0};
 
-  if (millis() % 2000 < 1000) {
+
+  if (millis() % 3000 < 1000) {
+
+  
     thermalManager.fan_speed[0] = 255;
     WRITE(X_DIR_PIN, LOW);
     #if HAS_Y_AXIS
@@ -713,38 +741,38 @@ static const uint16_t ASCII_Table_16x24[] PROGMEM = {
   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-void disp_char_1624(uint16_t x, uint16_t y, uint8_t c, uint16_t charColor, uint16_t bkColor) {
-  for (uint16_t i = 0; i < 24; i++) {
-    const uint16_t tmp_char = pgm_read_word(&ASCII_Table_16x24[((c - 0x20) * 24) + i]);
-    for (uint16_t j = 0; j < 16; j++)
-      SPI_TFT.SetPoint(x + j, y + i, ((tmp_char >> j) & 0x01) ? charColor : bkColor);
-  }
-}
+// void disp_char_1624(uint16_t x, uint16_t y, uint8_t c, uint16_t charColor, uint16_t bkColor) {
+//   for (uint16_t i = 0; i < 24; i++) {
+//     const uint16_t tmp_char = pgm_read_word(&ASCII_Table_16x24[((c - 0x20) * 24) + i]);
+//     for (uint16_t j = 0; j < 16; j++)
+//       SPI_TFT.SetPoint(x + j, y + i, ((tmp_char >> j) & 0x01) ? charColor : bkColor);
+//   }
+// }
 
-void disp_string(uint16_t x, uint16_t y, const char * cstr, uint16_t charColor, uint16_t bkColor) {
-  for (char c; (c = *cstr); cstr++, x += 16)
-    disp_char_1624(x, y, c, charColor, bkColor);
-}
+// void disp_string(uint16_t x, uint16_t y, const char * cstr, uint16_t charColor, uint16_t bkColor) {
+//   for (char c; (c = *cstr); cstr++, x += 16)
+//     disp_char_1624(x, y, c, charColor, bkColor);
+// }
 
-void disp_string(uint16_t x, uint16_t y, FSTR_P const fstr, uint16_t charColor, uint16_t bkColor) {
-  PGM_P pstr = FTOP(fstr);
-  for (char c; (c = pgm_read_byte(pstr)); pstr++, x += 16)
-    disp_char_1624(x, y, c, charColor, bkColor);
-}
+// void disp_string(uint16_t x, uint16_t y, FSTR_P const fstr, uint16_t charColor, uint16_t bkColor) {
+//   PGM_P pstr = FTOP(fstr);
+//   for (char c; (c = pgm_read_byte(pstr)); pstr++, x += 16)
+//     disp_char_1624(x, y, c, charColor, bkColor);
+// }
 
-void disp_assets_update() {
-  SPI_TFT.LCD_clear(0x0000);
-  disp_string(100, 140, F("Assets Updating..."), 0xFFFF, 0x0000);
-}
+// void disp_assets_update() {
+//   SPI_TFT.LCD_clear(0x0000);
+//   disp_string(100, 140, F("Assets Updating..."), 0xFFFF, 0x0000);
+// }
 
-void disp_assets_update_progress(FSTR_P const fmsg) {
-  static constexpr int buflen = 30;
-  char buf[buflen];
-  memset(buf, ' ', buflen);
-  strncpy_P(buf, FTOP(fmsg), buflen - 1);
-  buf[buflen - 1] = '\0';
-  disp_string(100, 165, buf, 0xFFFF, 0x0000);
-}
+// void disp_assets_update_progress(FSTR_P const fmsg) {
+//   static constexpr int buflen = 30;
+//   char buf[buflen];
+//   memset(buf, ' ', buflen);
+//   strncpy_P(buf, FTOP(fmsg), buflen - 1);
+//   buf[buflen - 1] = '\0';
+//   disp_string(100, 165, buf, 0xFFFF, 0x0000);
+// }
 
 
 

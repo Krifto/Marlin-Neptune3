@@ -80,6 +80,8 @@
     #define PR_INNER_VAR  abl.meshCount.x
     #define PR_INNER_SIZE abl.grid_points.x
   #endif
+
+  
 #endif
 
 #define G29_RETURN(b) return TERN_(G29_RETRY_AND_RECOVER, b)
@@ -890,7 +892,7 @@ G29_TYPE GcodeSuite::G29() {
   TERN_(FULL_REPORT_TO_HOST_FEATURE, set_and_report_grblstate(M_IDLE));
 
   G29_RETURN(isnan(abl.measured_z));
-
+  
 }
 
 #endif // HAS_ABL_NOT_UBL

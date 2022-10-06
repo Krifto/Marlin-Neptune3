@@ -115,6 +115,27 @@
 
 #endif // QUICK_HOME
 
+bool Z_MAX_IO_state;
+bool G28_Z_start_flg;
+//void GcodeSuite::Z_before_G28()
+void Z_before_G28()
+{
+    const int axis_home_dir = home_dir(_AXIS(Z));	
+    const float move_length = 1.5f * max_length(_AXIS(Z)) * axis_home_dir;
+
+	G28_Z_start_flg = true;
+  //SET_SOFT_ENDSTOP_LOOSE(true);
+  //if(READ(PC14)==LOW)
+  // if(READ(PB9)==LOW)
+  //   do_blocking_move_to_z(10,homing_feedrate(_AXIS(Z))*4);
+    
+	do_blocking_move_to_z(move_length,homing_feedrate(_AXIS(Z))*4);
+	planner.synchronize(); 
+  //SET_SOFT_ENDSTOP_LOOSE(false);
+	//quickstop_stepper();
+	//G28_Z_start_flg = false;
+}
+
 #if ENABLED(Z_SAFE_HOMING)
 
   inline void home_z_safely() {
@@ -151,7 +172,11 @@
       TERN_(SENSORLESS_HOMING, safe_delay(500)); // Short delay needed to settle
 
       do_blocking_move_to_xy(destination);
+
+      Z_before_G28();
+
       homeaxis(Z_AXIS);
+      
     }
     else {
       LCD_MESSAGE(MSG_ZPROBE_OUT);
@@ -208,7 +233,10 @@
  *  Y   Home to the Y endstop
  *  Z   Home to the Z endstop
  */
+
 void GcodeSuite::G28() {
+
+  
   DEBUG_SECTION(log_G28, "G28", DEBUGGING(LEVELING));
   if (DEBUGGING(LEVELING)) log_machine_info();
 
@@ -378,7 +406,7 @@ void GcodeSuite::G28() {
       constexpr bool doZ = false;
     #endif
 
-    TERN_(HOME_Z_FIRST, if (doZ) homeaxis(Z_AXIS));
+    TERN_(HOME_Z_FIRST, if (doZ)homeaxis(Z_AXIS));
 
     const float z_homing_height = parser.seenval('R') ? parser.value_linear_units() : Z_HOMING_HEIGHT;
 
@@ -416,9 +444,7 @@ void GcodeSuite::G28() {
         idex_set_parked();
 
       #else
-
         homeaxis(X_AXIS);
-
       #endif
     }
 
@@ -435,7 +461,17 @@ void GcodeSuite::G28() {
           stepper.set_all_z_lock(false);
           stepper.set_separate_multi_axis(false);
         #endif
-
+        
+    #if ZNP_TEST 
+		if(READ(PB9)==LOW)  do_z_clearance(10);
+    #else
+    if(READ(PC14)==LOW) { 
+      do_z_clearance(10, true); 
+    }
+    #endif
+    
+    planner.synchronize();
+	
         TERN(Z_SAFE_HOMING, home_z_safely(), homeaxis(Z_AXIS));
         probe.move_z_after_homing();
       }
@@ -556,4 +592,9 @@ void GcodeSuite::G28() {
       L64xxManager.set_param((L64XX_axis_t)cv, L6470_ABS_POS, stepper.position(L64XX_axis_xref[cv]));
     }
   #endif
+
+  #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+    set_bed_leveling_enabled(true);
+  #endif
+  
 }

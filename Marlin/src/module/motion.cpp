@@ -1315,7 +1315,11 @@ void prepare_line_to_destination() {
   }
 
   bool homing_needed_error(linear_axis_bits_t axis_bits/*=linear_bits*/) {
-    if ((axis_bits = axes_should_home(axis_bits))) {
+
+    axis_bits = axes_should_home(axis_bits);
+    
+    // if ((axis_bits = axes_should_home(axis_bits))) {
+    if(axis_bits) {
       PGM_P home_first = GET_TEXT(MSG_HOME_FIRST);
       char msg[strlen_P(home_first)+1];
       sprintf_P(msg, home_first,
@@ -1516,7 +1520,11 @@ void prepare_line_to_destination() {
   void do_homing_move(const AxisEnum axis, const float distance, const feedRate_t fr_mm_s=0.0, const bool final_approach=true) {
     DEBUG_SECTION(log_move, "do_homing_move", DEBUGGING(LEVELING));
 
-    const feedRate_t home_fr_mm_s = fr_mm_s ?: homing_feedrate(axis);
+    feedRate_t home_fr_mm_s = fr_mm_s ?: homing_feedrate(axis);
+    //Z HOMING SLOW
+    if(axis == Z_AXIS){
+       home_fr_mm_s = 1;
+    }
 
     if (DEBUGGING(LEVELING)) {
       DEBUG_ECHOPGM("...(", AS_CHAR(AXIS_CHAR(axis)), ", ", distance, ", ");

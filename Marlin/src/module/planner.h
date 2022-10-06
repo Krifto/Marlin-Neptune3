@@ -520,7 +520,9 @@ class Planner {
         flow_percentage[e] = flow;
         refresh_e_factor(e);
       }
-
+      static int16_t get_flow(const uint8_t e) {
+        return flow_percentage[e];
+      }
     #endif
 
     // Manage fans, paste pressure, etc.

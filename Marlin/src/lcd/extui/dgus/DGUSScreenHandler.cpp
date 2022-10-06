@@ -83,12 +83,14 @@ void DGUSScreenHandler::sendinfoscreen(const char *line1, const char *line2, con
 }
 
 void DGUSScreenHandler::HandleUserConfirmationPopUp(uint16_t VP, const char *line1, const char *line2, const char *line3, const char *line4, bool l1, bool l2, bool l3, bool l4) {
+  #if 0
   if (current_screen == DGUSLCD_SCREEN_CONFIRM) // Already showing a pop up, so we need to cancel that first.
     PopToOldScreen();
 
   ConfirmVP = VP;
   sendinfoscreen(line1, line2, line3, line4, l1, l2, l3, l4);
   GotoScreen(DGUSLCD_SCREEN_CONFIRM);
+  #endif
 }
 
 void DGUSScreenHandler::setstatusmessage(const char *msg) {
@@ -329,8 +331,25 @@ void DGUSScreenHandler::DGUSLCD_SendHeaterStatusToDisplay(DGUS_VP_Variable &var)
   }
 
   void DGUSScreenHandler::DGUSLCD_SD_ReallyAbort(DGUS_VP_Variable &var, void *val_ptr) {
-    ExtUI::stopPrint();
-    GotoScreen(DGUSLCD_SCREEN_MAIN);
+    const int16_t value = (int16_t)swap16(*(uint16_t*)val_ptr);
+    switch(value)
+    {
+      case 0:
+        ExtUI::stopPrint();
+        GotoScreen(DGUSLCD_SCREEN_MAIN);
+      break;
+      case 1:
+        if(IS_SD_PRINTING())
+        {
+          GotoScreen(MKSLCD_SCREEN_PRINT);
+        }
+        else
+        {
+          GotoScreen(MKSLCD_SCREEN_PAUSE);
+        }
+      break;
+    }
+
   }
 
   void DGUSScreenHandler::DGUSLCD_SD_PrintTune(DGUS_VP_Variable &var, void *val_ptr) {
@@ -339,10 +358,12 @@ void DGUSScreenHandler::DGUSLCD_SendHeaterStatusToDisplay(DGUS_VP_Variable &var)
   }
 
   void DGUSScreenHandler::SDCardError() {
+    #if 0
     DGUSScreenHandler::SDCardRemoved();
     sendinfoscreen(F("NOTICE"), nullptr, F("SD card error"), nullptr, true, true, true, true);
     SetupConfirmAction(nullptr);
     GotoScreen(DGUSLCD_SCREEN_POPUP);
+    #endif
   }
 #endif // SDSUPPORT
 
@@ -421,20 +442,59 @@ void DGUSScreenHandler::HandleTemperatureChanged(DGUS_VP_Variable &var, void *va
   skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
 }
 
+void DGUSScreenHandler::GetFlowRateStep(DGUS_VP_Variable &var, void *val_ptr) {
+  DEBUG_ECHOLNPGM("GetFlowRateStep");
+  *(uint16_t *)var.memadr = swap16(*(uint16_t *)val_ptr);  
+  // const uint16_t value = swap16(*(uint16_t *)val_ptr);
+  // uint16_t val_distance = 0;
+  // switch (value) {
+  //   case 0: val_distance = 1; break;
+  //   case 1: val_distance = 5; break;
+  //   case 2: val_distance = 10; break;
+  //   default: val_distance = 1; break;
+  // }
+  // FlowPercentageStep = val_distance;
+  
+}
 void DGUSScreenHandler::HandleFlowRateChanged(DGUS_VP_Variable &var, void *val_ptr) {
   #if HAS_EXTRUDERS
-    uint16_t newvalue = swap16(*(uint16_t*)val_ptr);
+    
+    uint16_t step;
+    uint16_t flag = swap16(*(uint16_t*)val_ptr);
+
     uint8_t target_extruder;
     switch (var.VP) {
-      default: return;
+      //default: return;
       case VP_Flowrate_E0: target_extruder = 0; break;
       #if HAS_MULTI_EXTRUDER
         case VP_Flowrate_E1: target_extruder = 1; break;
       #endif
     }
+    switch (FlowPercentageStep) {
+      case 0: step = 1; break;
+      case 1: step = 5; break;
+      case 2: step = 10; break;
+      default: step = 1; break;
+    }
+    uint16_t newvalue = planner.get_flow(target_extruder);
+
+    switch (flag) {
+      case 0:
+          newvalue -= step;
+        break;
+      case 1:
+          newvalue += step;
+        break;
+      case 2:
+          newvalue = 100;
+        break;
+      default:
+        break;
+    }
 
     planner.set_flow(target_extruder, newvalue);
-    skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
+    //skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
+    ForceCompleteUpdate();
   #else
     UNUSED(var); UNUSED(val_ptr);
   #endif
@@ -539,6 +599,7 @@ void DGUSScreenHandler::HandleStepPerMMExtruderChanged(DGUS_VP_Variable &var, vo
 
 #if HAS_PID_HEATING
   void DGUSScreenHandler::HandlePIDAutotune(DGUS_VP_Variable &var, void *val_ptr) {
+#if 0    
     DEBUG_ECHOLNPGM("HandlePIDAutotune");
 
     char buf[32] = {0};
@@ -570,6 +631,7 @@ void DGUSScreenHandler::HandleStepPerMMExtruderChanged(DGUS_VP_Variable &var, vo
       sendinfoscreen(F("PID is autotuning"), F("please wait"), NUL_STR, NUL_STR, true, true, true, true);
       GotoScreen(DGUSLCD_SCREEN_WAITING);
     #endif
+#endif
   }
 #endif // HAS_PID_HEATING
 
@@ -644,8 +706,9 @@ void DGUSScreenHandler::HandleHeaterControl(DGUS_VP_Variable &var, void *val_ptr
   void DGUSScreenHandler::HandlePowerLossRecovery(DGUS_VP_Variable &var, void *val_ptr) {
     uint16_t value = swap16(*(uint16_t*)val_ptr);
     if (value) {
+      //dgusdisplay.WriteVariable(VP_SD_Print_Filename, &recovery.info.sd_filename[0], 32, true);
       queue.inject(F("M1000"));
-      dgusdisplay.WriteVariable(VP_SD_Print_Filename, filelist.filename(), 32, true);
+      //dgusdisplay.WriteVariable(VP_SD_Print_Filename, filelist.filename(), 32, true);
       GotoScreen(PLR_SCREEN_RECOVER);
     }
     else {
@@ -731,6 +794,11 @@ void DGUSDisplay::RequestScreen(DGUSLCD_Screens screen) {
   DEBUG_ECHOLNPGM("GotoScreen ", screen);
   const unsigned char gotoscreen[] = { 0x5A, 0x01, (unsigned char) (screen >> 8U), (unsigned char) (screen & 0xFFU) };
   WriteVariable(0x84, gotoscreen, sizeof(gotoscreen));
+}
+void DGUSDisplay::SetBeeper_time(uint8_t time) {
+  DEBUG_ECHOLNPGM("Beeper_time ", time);
+  const unsigned char time_array[] = {0x5A,(unsigned char)(time & 0xFFU)};
+  WriteVariable(0xA0, time_array, sizeof(time_array));
 }
 
 #endif // HAS_DGUS_LCD_CLASSIC

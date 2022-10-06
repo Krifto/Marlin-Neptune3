@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include "mks_hardware.h"
+
 #include "../DGUSDisplay.h"
 #include "../DGUSVPVariable.h"
 #include "../DGUSDisplayDef.h"
@@ -30,7 +32,9 @@
 enum DGUSLCD_Screens : uint8_t;
 
 class DGUSScreenHandler {
+  
 public:
+
   DGUSScreenHandler() = default;
 
   static bool loop();
@@ -52,7 +56,7 @@ public:
   static void sendinfoscreen_en_mks(const char *line1, const char *line2, const char *line3, const char *line4) ;
   static void sendinfoscreen_mks(const void *line1, const void *line2, const void *line3, const void *line4, uint16_t language);
   #endif
-
+  
   // "M117" Message -- msg is a RAM ptr.
   static void setstatusmessage(const char *msg);
   // The same for messages from Flash
@@ -69,14 +73,32 @@ public:
   // Hook for "Change this temperature"
   static void HandleTemperatureChanged(DGUS_VP_Variable &var, void *val_ptr);
   // Hook for "Change Flowrate"
+  static void GetFlowRateStep(DGUS_VP_Variable &var, void *val_ptr); 
   static void HandleFlowRateChanged(DGUS_VP_Variable &var, void *val_ptr);
   #if ENABLED(DGUS_UI_MOVE_DIS_OPTION)
     // Hook for manual move option
     static void HandleManualMoveOption(DGUS_VP_Variable &var, void *val_ptr);
   #endif
+  static void GetManualE0_T_step(DGUS_VP_Variable &var, void *val_ptr);
+  static void GetManualHotB_T_step(DGUS_VP_Variable &var, void *val_ptr);
 
   static void EEPROM_CTRL(DGUS_VP_Variable &var, void *val_ptr);
   static void LanguageChange_MKS(DGUS_VP_Variable &var, void *val_ptr);
+  static void Perph_page_MKS(DGUS_VP_Variable &var, void *val_ptr);
+  static void fan_page_MKS(DGUS_VP_Variable &var, void *val_ptr);
+  static void print_set_page_MKS(DGUS_VP_Variable &var, void *val_ptr);
+  static void PREPARE_PAGE_SET(DGUS_VP_Variable &var, void *val_ptr);
+  static void SETTING_PAGE_JUMP(DGUS_VP_Variable &var, void *val_ptr);
+  static void AUTO_LEVEL_POPUP(DGUS_VP_Variable &var, void *val_ptr);
+  static void SET_FAN_ON_OFF_HANDLER(DGUS_VP_Variable &var, void *val_ptr);
+  static void PRINT_SETTING_HANDLER(DGUS_VP_Variable &var, void *val_ptr);
+  static void SETTING_TEMPER_PAGE_JUMP(DGUS_VP_Variable &var, void *val_ptr);
+  static void GetFeedratePercentageStep(DGUS_VP_Variable &var, void *val_ptr);
+  static void HandleFeedratePercentageAdjust(DGUS_VP_Variable &var, void *val_ptr);
+  static void SET_FILAMENT_DET_HANDLER(DGUS_VP_Variable &var, void *val_ptr); 
+  static void GetFanPercentageStep(DGUS_VP_Variable &var, void *val_ptr);
+  static void HandleFanPercentageAdjust(DGUS_VP_Variable &var, void *val_ptr);
+
   static void GetOffsetValue(DGUS_VP_Variable &var, void *val_ptr);
   static void Level_Ctrl_MKS(DGUS_VP_Variable &var, void *val_ptr);
   static void MeshLevel(DGUS_VP_Variable &var, void *val_ptr);
@@ -96,10 +118,13 @@ public:
   static void GetTurnOffCtrl(DGUS_VP_Variable &var, void *val_ptr);
   static void LanguagePInit(void);
   static void DGUS_Runout_Idle(void);
+  static void DGUS_Runout_reset(void);
+  static void DGUS_Runout_init(void);
   static void DGUS_RunoutInit(void);
   static void DGUS_ExtrudeLoadInit(void);
   static void LCD_BLK_Adjust(DGUS_VP_Variable &var, void *val_ptr);
   static void SD_FileBack(DGUS_VP_Variable &var, void *val_ptr);
+  static void Filament_Runout_Comfirm(DGUS_VP_Variable&, void*);
 
   // Hook for manual move.
   static void HandleManualMove(DGUS_VP_Variable &var, void *val_ptr);
@@ -124,9 +149,19 @@ public:
   static void HandleMaxAccChange_MKS(DGUS_VP_Variable &var, void *val_ptr);
   static void HandleExtruderAccChange_MKS(DGUS_VP_Variable &var, void *val_ptr);
   static void HandleChangeLevelPoint_MKS(DGUS_VP_Variable &var, void *val_ptr);
+
+  static void HandleSetFan_MKS(DGUS_VP_Variable &var, void *val_ptr);
+  static void HandleSetPLAorABS_MKS(DGUS_VP_Variable &var, void *val_ptr);
+
   static void HandleTravelAccChange_MKS(DGUS_VP_Variable &var, void *val_ptr);
   static void HandleFeedRateMinChange_MKS(DGUS_VP_Variable &var, void *val_ptr);
   static void HandleMin_T_F_MKS(DGUS_VP_Variable &var, void *val_ptr);
+  static void HandleManualE0_T(DGUS_VP_Variable &var, void *val_ptr);
+  static void HandleManualHotB_T(DGUS_VP_Variable &var, void *val_ptr);
+  static void GetDefault_Temp_MKS(DGUS_VP_Variable &var, void *val_ptr); 
+  static void HandleSetPLAorABS_SAVE(DGUS_VP_Variable &var, void *val_ptr); 
+  static void GetLanguage_MKS(DGUS_VP_Variable &var, void *val_ptr); 
+  static void HandleLanguage_SAVE(DGUS_VP_Variable &var, void *val_ptr); 
 
   #if HAS_PID_HEATING
     // Hook for "Change this temperature PID para"
@@ -136,8 +171,8 @@ public:
   #endif
   #if HAS_BED_PROBE
     // Hook for "Change probe offset z"
-    static void HandleProbeOffsetZChanged(DGUS_VP_Variable &var, void *val_ptr);
   #endif
+    static void HandleProbeOffsetZChanged(DGUS_VP_Variable &var, void *val_ptr);
   #if ENABLED(BABYSTEPPING)
     // Hook for live z adjust action
     static void HandleLiveAdjustZ(DGUS_VP_Variable &var, void *val_ptr);
@@ -166,7 +201,14 @@ public:
     static void GetManualFilament(DGUS_VP_Variable &var, void *val_ptr);
     static void GetManualFilamentSpeed(DGUS_VP_Variable &var, void *val_ptr);
   #endif
+    static void MKS_PrintFilamentLoad(DGUS_VP_Variable &var, void *val_ptr);
+    static void MKS_PrintFilamentUnLoad(DGUS_VP_Variable &var, void *val_ptr);
 
+    static void MKS_PrintFilamentLoad_Confirm(DGUS_VP_Variable &var, void *val_ptr);
+    static void MKS_PrintFilamentUnLoad_Confirm(DGUS_VP_Variable &var, void *val_ptr);
+    static void MKS_FilamentCancelHeating(DGUS_VP_Variable &var, void *val_ptr);
+    static void MKS_Extrude_load_popup(DGUS_VP_Variable &var, void *val_ptr);
+    static void MKS_Extrude_unload_popup(DGUS_VP_Variable &var, void *val_ptr);
   #if ENABLED(SDSUPPORT)
     // Callback for VP "Display wants to change screen when there is a SD card"
     static void ScreenChangeHookIfSD(DGUS_VP_Variable &var, void *val_ptr);
@@ -176,6 +218,7 @@ public:
     static void DGUSLCD_SD_FileSelected(DGUS_VP_Variable &var, void *val_ptr);
     // start print after confirmation received.
     static void DGUSLCD_SD_StartPrint(DGUS_VP_Variable &var, void *val_ptr);
+    static void DGUSLCD_SD_PrintAgain(DGUS_VP_Variable &var, void *val_ptr);
     // User hit the pause, resume or abort button.
     static void DGUSLCD_SD_ResumePauseAbort(DGUS_VP_Variable &var, void *val_ptr);
     // User confirmed the abort action
@@ -306,6 +349,9 @@ private:
 
   static void (*confirm_action_cb)();
 };
+extern DGUSScreenHandler ScreenHandler;
+
+void dgus_sd_read_err_disp(uint16_t on_off);
 
 #define MKS_Language_Choose   0x00
 #define MKS_Language_NoChoose 0x01

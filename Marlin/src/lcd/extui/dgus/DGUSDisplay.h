@@ -36,7 +36,7 @@
 
 enum DGUSLCD_Screens : uint8_t;
 
-//#define DEBUG_DGUSLCD
+// #define DEBUG_DGUSLCD
 #define DEBUG_OUT ENABLED(DEBUG_DGUSLCD)
 #include "../../../core/debug_out.h"
 
@@ -65,6 +65,8 @@ public:
   static void WriteVariable(uint16_t adr, long value);
   static void MKS_WriteVariable(uint16_t adr, uint8_t value);
 
+  static void write_str_to_disp(uint16_t adr, const void *values, uint8_t valueslen, bool isstr);
+
 
   // Utility functions for bridging ui_api and dbus
   template<typename T, float(*Getter)(const T), T selector, typename WireType=uint16_t>
@@ -85,6 +87,7 @@ public:
   // (And trigger update of containing VPs)
   // (to implement a pop up message, which may not be nested)
   static void RequestScreen(DGUSLCD_Screens screen);
+  static void SetBeeper_time(uint8_t time);
 
   // Periodic tasks, eg. Rx-Queue handling.
   static void loop();

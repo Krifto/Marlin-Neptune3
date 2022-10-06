@@ -53,6 +53,9 @@ constexpr uint8_t DGUS_HEADER2 = 0xA5;
 constexpr uint8_t DGUS_CMD_WRITEVAR = 0x82;
 constexpr uint8_t DGUS_CMD_READVAR = 0x83;
 
+constexpr uint8_t DGUS_CMD_END1 = 0xFF;
+constexpr uint8_t DGUS_CMD_END2 = 0xFF;
+
 #if ENABLED(DEBUG_DGUSLCD)
   bool dguslcd_local_debug; // = false;
 #endif
@@ -67,7 +70,7 @@ void DGUSDisplay::InitDisplay() {
     TERN_(DGUS_LCD_UI_MKS, delay(LOGO_TIME_DELAY));     // Show the logo for a little while
   }
 
-  RequestScreen(TERN(SHOW_BOOTSCREEN, DGUSLCD_SCREEN_BOOT, DGUSLCD_SCREEN_MAIN));
+  // RequestScreen(TERN(SHOW_BOOTSCREEN, DGUSLCD_SCREEN_BOOT, DGUSLCD_SCREEN_MAIN));
 }
 
 void DGUSDisplay::WriteVariable(uint16_t adr, const void *values, uint8_t valueslen, bool isstr) {
@@ -83,6 +86,28 @@ void DGUSDisplay::WriteVariable(uint16_t adr, const void *values, uint8_t values
     }
     LCD_SERIAL.write(x);
   }
+}
+
+void DGUSDisplay::write_str_to_disp(uint16_t adr, const void *values, uint8_t valueslen, bool isstr) {
+
+  const char* myvalues = static_cast<const char*>(values);
+
+  bool strend = !myvalues;
+
+  valueslen = valueslen + 1;
+
+  WriteHeader(adr, DGUS_CMD_WRITEVAR, valueslen);
+  while (valueslen--) {
+    char x;
+    if (!strend) x = *myvalues++;
+    if ((isstr && !x) || strend) {
+      strend = true;
+      x = ' ';
+    }
+    LCD_SERIAL.write(x);
+  }
+  LCD_SERIAL.write(DGUS_CMD_END1);
+  LCD_SERIAL.write(DGUS_CMD_END2);
 }
 
 void DGUSDisplay::WriteVariable(uint16_t adr, uint16_t value) {

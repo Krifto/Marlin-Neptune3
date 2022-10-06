@@ -166,7 +166,7 @@ public:
     static constexpr xy_pos_t offset_xy = xy_pos_t({ 0, 0 });   // See #16767
   #endif
 
-  static bool deploy() { return set_deployed(true); }
+  static bool deploy()  { return set_deployed(true); }
   static bool stow()   { return set_deployed(false); }
 
   #if HAS_BED_PROBE || HAS_LEVELING

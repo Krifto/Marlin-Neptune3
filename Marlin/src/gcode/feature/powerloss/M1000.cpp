@@ -39,6 +39,11 @@
   #include "../../../lcd/e3v2/jyersui/dwin.h" // Temporary fix until it can be better implemented
 #endif
 
+#ifdef DGUS_LCD_UI_MKS
+#include "../../../lcd/extui/dgus/mks/DGUSDisplayDef.h"
+#include "../../../lcd/extui/dgus/mks/DGUSScreenHandler.h"
+#endif
+
 #define DEBUG_OUT ENABLED(DEBUG_POWER_LOSS_RECOVERY)
 #include "../../../core/debug_out.h"
 
@@ -88,7 +93,12 @@ void GcodeSuite::M1000() {
       TERN_(EXTENSIBLE_UI, ExtUI::onPrintTimerStopped());
     }
     else
+    {
+      #ifdef DGUS_LCD_UI_MKS
+      dgusdisplay.WriteVariable(VP_SD_Print_Filename, &recovery.info.sd_filename[0], 32, true);
+      #endif
       recovery.resume();
+    }
   }
   else
     plr_error(recovery.info.valid_head ? F("No") : F("Invalid"));

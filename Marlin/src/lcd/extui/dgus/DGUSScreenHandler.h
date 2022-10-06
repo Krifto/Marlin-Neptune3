@@ -25,8 +25,8 @@
  * lcd/extui/dgus/DGUSScreenHandler.h
  */
 
-#include "../../../inc/MarlinConfigPre.h"
 
+#include "mks/mks_hardware.h"
 #include "../ui_api.h"
 
 #if ENABLED(DGUS_FILAMENT_LOADUNLOAD)
@@ -36,6 +36,9 @@
     uint8_t action; // load or unload
     bool heated; // heating done ?
     float purge_length; // the length to extrude before unload, prevent filament jam
+
+    bool heating;
+    bool load_or_unload;
   } filament_data_t;
 
   extern filament_data_t filament_data;
@@ -74,3 +77,5 @@ extern DGUSScreenHandler ScreenHandler;
   .set_by_display_handler = RXFPTR, \
   .send_to_display_handler = TXFPTR \
 }
+
+

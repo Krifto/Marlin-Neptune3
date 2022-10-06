@@ -38,6 +38,7 @@
 #define BOARD_NO_NATIVE_USB
 #define MKS_HARDWARE_TEST_ONLY_E0
 
+
 // Avoid conflict with TIMER_SERVO when using the STM32 HAL
 #define TEMP_TIMER  5
 
@@ -186,7 +187,7 @@
     #define KILL_PIN_STATE                  HIGH
   #endif
 
-  #define MT_DET_1_PIN                      PA4
+  
   #define MT_DET_PIN_STATE                  LOW
 
   #define WIFI_IO0_PIN                      PC13
@@ -198,8 +199,13 @@
     #define MKS_TEST_PS_ON_PIN              PB0   // PW_OFF
   #endif
 #else
+  #if ENABLED(MKS_TEST)
+    #define MKS_TEST_POWER_LOSS_PIN         PA2   // PW_DET
+    #define MKS_TEST_PS_ON_PIN              PB0   // PW_OFF
+  #endif
   //#define POWER_LOSS_PIN                  PA2   // PW_DET
   //#define PS_ON_PIN                       PB2   // PW_OFF
+  #define MT_DET_1_PIN                      PB4
   #define FIL_RUNOUT_PIN                    PA4
 #endif
 

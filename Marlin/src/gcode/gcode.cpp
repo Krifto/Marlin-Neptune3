@@ -71,6 +71,8 @@ GcodeSuite gcode;
 
 #include "../MarlinCore.h" // for idle, kill
 
+uint8_t Leveling_done_flg = 0;
+
 // Inactivity shutdown
 millis_t GcodeSuite::previous_move_ms = 0,
          GcodeSuite::max_inactive_time = 0,
@@ -382,6 +384,7 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
       #if HAS_LEVELING
         case 29:                                                  // G29: Bed leveling calibration
           TERN(G29_RETRY_AND_RECOVER, G29_with_retry, G29)();
+		  Leveling_done_flg = 1;
           break;
       #endif
 

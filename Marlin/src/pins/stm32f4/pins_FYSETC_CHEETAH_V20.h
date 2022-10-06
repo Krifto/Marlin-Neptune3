@@ -56,9 +56,13 @@
 //
 // Limit Switches
 //
-#define X_STOP_PIN                          PB4
-#define Y_STOP_PIN                          PC8
-#define Z_STOP_PIN                          PB1
+// #define X_STOP_PIN                          PB4
+// #define Y_STOP_PIN                          PC8
+// #define Z_STOP_PIN                          PB1
+#define X_STOP_PIN                          PA13
+#define Y_STOP_PIN                          PB8
+#define Z_STOP_PIN                          PC13
+
 
 //
 // Filament runout
@@ -68,21 +72,38 @@
 //
 // Steppers
 //
-#define X_STEP_PIN                          PC0
-#define X_DIR_PIN                           PC1
-#define X_ENABLE_PIN                        PA8
+// #define X_STEP_PIN                          PC0
+// #define X_DIR_PIN                           PC1
+// #define X_ENABLE_PIN                        PA8
 
-#define Y_STEP_PIN                          PC14
-#define Y_DIR_PIN                           PC13
-#define Y_ENABLE_PIN                        PC15
+// #define Y_STEP_PIN                          PC14
+// #define Y_DIR_PIN                           PC13
+// #define Y_ENABLE_PIN                        PC15
 
-#define Z_STEP_PIN                          PB9
-#define Z_DIR_PIN                           PB8
-#define Z_ENABLE_PIN                        PC2
+// #define Z_STEP_PIN                          PB9
+// #define Z_DIR_PIN                           PB8
+// #define Z_ENABLE_PIN                        PC2
 
-#define E0_STEP_PIN                         PB2
-#define E0_DIR_PIN                          PA15
-#define E0_ENABLE_PIN                       PD2
+// #define E0_STEP_PIN                         PB2
+// #define E0_DIR_PIN                          PA15
+// #define E0_ENABLE_PIN                       PD2
+
+#define X_ENABLE_PIN                        PD2
+#define X_STEP_PIN                          PC12
+#define X_DIR_PIN                           PB3
+
+#define Y_ENABLE_PIN                        PA12
+#define Y_STEP_PIN                          PA11
+#define Y_DIR_PIN                           PA15
+
+#define Z_ENABLE_PIN                        PC8
+#define Z_STEP_PIN                          PC7
+#define Z_DIR_PIN                           PC9
+
+#define E0_ENABLE_PIN                       PC6
+#define E0_STEP_PIN                         PB10
+#define E0_DIR_PIN                          PB1
+
 
 #if HAS_TMC_UART
   #define X_HARDWARE_SERIAL  Serial2
@@ -119,23 +140,35 @@
 //
 // Temperature Sensors
 //
-#define TEMP_BED_PIN                        PC5   // Analog Input
-#define TEMP_0_PIN                          PC4   // Analog Input
+// #define TEMP_BED_PIN                        PC5   // Analog Input
+// #define TEMP_0_PIN                          PC4   // Analog Input
+
+#define TEMP_0_PIN                          PC1   // TH1
+#define TEMP_BED_PIN                        PC2   // TB1
 
 //
 // Misc. Functions
 //
-#define SDSS                                PA4
-#define SD_DETECT_PIN                       PC3
+// #define SDSS                                PA4
+// #define SD_DETECT_PIN                       PC3
 
-#ifndef RGB_LED_R_PIN
-  #define RGB_LED_R_PIN                     PB0
-#endif
-#ifndef RGB_LED_G_PIN
-  #define RGB_LED_G_PIN                     PB7
-#endif
-#ifndef RGB_LED_B_PIN
-  #define RGB_LED_B_PIN                     PB6
+// #ifndef RGB_LED_R_PIN
+//   #define RGB_LED_R_PIN                     PB0
+// #endif
+// #ifndef RGB_LED_G_PIN
+//   #define RGB_LED_G_PIN                     PB7
+// #endif
+// #ifndef RGB_LED_B_PIN
+//   #define RGB_LED_B_PIN                     PB6
+// #endif
+#if SD_CONNECTION_IS(ONBOARD)
+  #define ENABLE_SPI3
+  #define SD_SS_PIN                         -1
+  #define SDSS                              PB12
+  #define SD_SCK_PIN                        PB13
+  #define SD_MISO_PIN                       PB14
+  #define SD_MOSI_PIN                       PB15
+  #define SD_DETECT_PIN                     PC3
 #endif
 
 /**
