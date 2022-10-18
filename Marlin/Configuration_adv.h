@@ -2318,7 +2318,7 @@
  * Currently handles M108, M112, M410, M876
  * NOTE: Not yet implemented for all platforms.
  */
-#define EMERGENCY_PARSER    //2-------开启紧急命令解析器,注释后可以正常使用M108？
+#define EMERGENCY_PARSER    //2-------开启紧急命令解析器,注释后可以正常使用M108？="Turn on the emergency command parser, can you use M108 normally after commenting?"
 
 /**
  * Realtime Reporting (requires EMERGENCY_PARSER)
@@ -2335,7 +2335,7 @@
  * - During Hold all Emergency Parser commands are available, as usual.
  * - Enable NANODLP_Z_SYNC and NANODLP_ALL_AXIS for move command end-state reports.
  */
-//#define REALTIME_REPORTING_COMMANDS
+#define REALTIME_REPORTING_COMMANDS
 #if ENABLED(REALTIME_REPORTING_COMMANDS)
   //#define FULL_REPORT_TO_HOST_FEATURE   // Auto-report the machine status like Grbl CNC
 #endif
