@@ -1187,7 +1187,7 @@
 
 // Most probes should stay away from the edges of the bed, but
 // with NOZZLE_AS_PROBE this can be negative for a wider probing area.
-//2----------探测更边上的范围
+//2----------探测更边上的范围="Probe the range further edge"
 #define PROBING_MARGIN 15
 
 // X and Y axis travel speed (mm/min) between probes (133*60)//
@@ -1620,7 +1620,7 @@
 #if EITHER(AUTO_BED_LEVELING_LINEAR, AUTO_BED_LEVELING_BILINEAR)
 
 
-  //2--------设置网格探测点数量
+  //2--------设置网格探测点数量="Set the number of mesh probe points"
   // Set the number of grid points per dimension.
   #define GRID_MAX_POINTS_X 4
   #define GRID_MAX_POINTS_Y GRID_MAX_POINTS_X
@@ -1640,7 +1640,7 @@
     //
 
     
-    //2---------探测点之间的细分数
+    //2---------探测点之间的细分数="The number of subdivisions between probe points"
     //#define ABL_BILINEAR_SUBDIVISION
     #if ENABLED(ABL_BILINEAR_SUBDIVISION)
       // Number of subdivisions between probe points
@@ -1736,7 +1736,7 @@
  * Commands to execute at the end of G29 probing.
  * Useful to retract or move the Z probe out of the way."G1 Z10 F12000\nG1 X15 Y330\nG1 Z0.5\nG1 Z10"
  */
-//2--------调平后的动作
+//2--------调平后的动作="Flattened action"
 #define Z_PROBE_END_SCRIPT "M500\nM501\nG28 Z\nG90\nG1 Z0.1 F60"
 
 // @section homing
