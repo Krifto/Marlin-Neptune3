@@ -6,6 +6,7 @@ commited to a "firmware" subfolder in the repo. In this repository, I would like
 # Neptune 3
 - More product updates and tutorial materials are in the works.
 
+*This repository is archived as I am not using Marlin anymore*
 
 
 ## 说明/Brief description
