@@ -3,10 +3,12 @@ This is a direct fork of Marlin 2.0.9.3, with all the [Neptune3-specific changes
 I am not the original author of those changes. The original Neptune3 repo has a copy of Marlin in versioned subfolders, and binaries are 
 commited to a "firmware" subfolder in the repo. In this repository, I would like to experiment using github's release functionality instead.
 
+**This repository is archived as I am not using Marlin anymore**
+
 # Neptune 3
 - More product updates and tutorial materials are in the works.
 
-*This repository is archived as I am not using Marlin anymore*
+
 
 
 ## 说明/Brief description
